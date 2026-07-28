@@ -74,7 +74,7 @@ body {
 .logo-title small { display:block; font-size: 10px; color: var(--text-light); font-weight: 500; letter-spacing: 1px; }
 
 .header-spacer { flex: 1; }
-.header-actions { display: flex; gap: 8px; align-items: center; }
+.header-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
 .app-version {
   font-size: 11px;
   color: var(--text-light);
@@ -112,6 +112,34 @@ body {
 }
 .btn-icon:hover { background: var(--bg); color: var(--text); }
 
+/* ===== Tabs ===== */
+.tab-bar {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0 20px;
+  display: flex;
+  gap: 4px;
+  position: sticky;
+  top: 64px;
+  z-index: 96;
+}
+.tab-btn {
+  padding: 12px 20px;
+  border: none;
+  background: transparent;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-family: inherit;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  transition: color .15s;
+}
+.tab-btn:hover { color: var(--text); }
+.tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); }
+.tab-btn .cnt { font-size: 11px; opacity: 0.7; margin-left: 4px; font-family: ui-monospace, monospace; }
+
 /* ===== Toolbar ===== */
 .toolbar {
   background: var(--surface);
@@ -121,7 +149,7 @@ body {
   gap: 10px;
   align-items: center;
   position: sticky;
-  top: 65px;
+  top: 108px;
   z-index: 90;
   flex-wrap: wrap;
 }
@@ -130,7 +158,7 @@ body {
   position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
   color: var(--text-light); font-size: 13px;
 }
-#searchInput {
+.search-box input {
   width: 100%;
   padding: 9px 12px 9px 36px;
   border-radius: var(--radius-sm);
@@ -140,7 +168,7 @@ body {
   font-family: inherit;
   outline: none;
 }
-#searchInput:focus { border-color: var(--primary); background: var(--surface); }
+.search-box input:focus { border-color: var(--primary); background: var(--surface); }
 
 .seg {
   display: inline-flex;
@@ -182,7 +210,7 @@ body {
 }
 .btn-add:hover { background: var(--primary-dark); }
 
-/* ===== Content grid ===== */
+/* ===== Content grid (results) ===== */
 .content { padding: 20px; }
 .grid {
   display: grid;
@@ -227,7 +255,35 @@ body {
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
 }
 .card-number { font-size: 12px; color: var(--text-muted); font-family: ui-monospace, monospace; }
+.card-agency { font-size: 12px; color: var(--primary-dark); font-weight: 500; }
 .card-meta { margin-top: auto; display: flex; justify-content: space-between; gap: 8px; font-size: 11px; color: var(--text-light); padding-top: 6px; }
+
+/* ===== Agency table ===== */
+.tbl {
+  width: 100%;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  border-collapse: collapse;
+}
+.tbl th, .tbl td {
+  text-align: left;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-light);
+  font-size: 13px;
+  vertical-align: top;
+}
+.tbl th {
+  background: var(--bg);
+  font-size: 11px; font-weight: 600; color: var(--text-muted); letter-spacing: .3px;
+}
+.tbl tr:last-child td { border-bottom: none; }
+.tbl tbody tr { cursor: pointer; transition: background .12s; }
+.tbl tbody tr:hover { background: var(--bg); }
+.tbl .col-name { font-weight: 600; }
+.tbl .muted { color: var(--text-light); }
+.tbl-actions { text-align: right; white-space: nowrap; }
 
 /* ===== Empty ===== */
 .empty-state { text-align: center; padding: 80px 20px; color: var(--text-muted); }
@@ -384,9 +440,10 @@ body {
 .loading-text { font-size: 13px; color: var(--text-muted); }
 
 @media (max-width: 640px) {
-  .toolbar { top: 61px; }
+  .tab-bar, .toolbar { position: static; top: auto; }
   .search-box { flex-basis: 100%; max-width: none; }
   .form-2col { grid-template-columns: 1fr; }
+  .tbl th:nth-child(3), .tbl td:nth-child(3) { display: none; }
 }
 </style>
 </head>
@@ -401,17 +458,23 @@ body {
   <div class="header-spacer"></div>
   <div class="header-actions">
     <span class="conn-pill off" id="connPill">未接続</span>
-    <span class="app-version" id="appVersion">v1.0.0</span>
+    <span class="app-version" id="appVersion">v1.1.0</span>
     <button class="btn-icon" id="btnReload" title="GitHubから再読み込み">🔄 更新</button>
     <button class="btn-icon" id="btnSettings" title="設定">⚙️ 設定</button>
   </div>
 </header>
 
-<!-- ============ Toolbar ============ -->
-<div class="toolbar">
+<!-- ============ Tabs ============ -->
+<div class="tab-bar">
+  <button class="tab-btn active" data-tab="results" id="tabResults">📋 検査結果 <span class="cnt" id="tabResultsCnt"></span></button>
+  <button class="tab-btn" data-tab="agencies" id="tabAgencies">🏢 検査機関 <span class="cnt" id="tabAgenciesCnt"></span></button>
+</div>
+
+<!-- ============ Toolbar: results ============ -->
+<div class="toolbar" id="toolbarResults">
   <div class="search-box">
     <span class="search-icon">🔍</span>
-    <input type="text" id="searchInput" placeholder="商品名・商品番号・検査者で検索...">
+    <input type="text" id="searchInput" placeholder="商品名・商品番号・検査者・機関で検索...">
   </div>
   <div class="seg" id="resultFilter">
     <button data-result="all" class="active">すべて</button>
@@ -423,13 +486,25 @@ body {
   <button class="btn-add" id="btnAdd">＋ 検査結果を追加</button>
 </div>
 
+<!-- ============ Toolbar: agencies ============ -->
+<div class="toolbar" id="toolbarAgencies" style="display:none">
+  <div class="search-box">
+    <span class="search-icon">🔍</span>
+    <input type="text" id="agencySearch" placeholder="機関名・検査内容・商品で検索...">
+  </div>
+  <div class="toolbar-spacer"></div>
+  <span class="result-count" id="agencyCount"></span>
+  <button class="btn-add" id="btnAddAgency">＋ 検査機関を追加</button>
+</div>
+
 <!-- ============ Content ============ -->
 <main class="content">
   <div class="grid" id="grid"></div>
+  <div id="agencyTableWrap" style="display:none"></div>
   <div class="empty-state" id="emptyState" style="display:none"></div>
 </main>
 
-<!-- ============ Add/Edit Modal ============ -->
+<!-- ============ Add/Edit Result Modal ============ -->
 <div class="modal-backdrop" id="editModal" style="display:none">
   <div class="modal modal-lg">
     <div class="modal-header">
@@ -461,9 +536,16 @@ body {
           <input type="date" id="fDate">
         </div>
       </div>
-      <div class="form-row">
-        <label>検査者</label>
-        <input type="text" id="fInspector" placeholder="例: 山田">
+      <div class="form-2col">
+        <div class="form-row">
+          <label>検査者</label>
+          <input type="text" id="fInspector" placeholder="例: 山田">
+        </div>
+        <div class="form-row">
+          <label>検査機関</label>
+          <select id="fAgency"><option value="">（未選択）</option></select>
+          <small class="form-hint">「検査機関」タブで登録した機関から選べます</small>
+        </div>
       </div>
       <div class="form-row">
         <label>メモ・備考</label>
@@ -488,7 +570,7 @@ body {
   </div>
 </div>
 
-<!-- ============ Detail Modal ============ -->
+<!-- ============ Result Detail Modal ============ -->
 <div class="modal-backdrop" id="detailModal" style="display:none">
   <div class="modal modal-lg">
     <div class="modal-header">
@@ -501,6 +583,42 @@ body {
       <div class="modal-actions">
         <button class="btn-secondary" onclick="closeModal('detailModal')">閉じる</button>
         <button class="btn-primary" id="btnEditFromDetail">✏️ 編集</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ Agency Detail/Edit Modal ============ -->
+<div class="modal-backdrop" id="agencyModal" style="display:none">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="agencyModalTitle">検査機関を追加</h2>
+      <button class="btn-close" onclick="closeModal('agencyModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="agId">
+      <div class="form-row">
+        <label>機関名 <span style="color:var(--fail)">*</span></label>
+        <input type="text" id="agName" placeholder="例: ○○検査センター">
+      </div>
+      <div class="form-2col">
+        <div class="form-row">
+          <label>主な検査内容</label>
+          <input type="text" id="agInspection" placeholder="例: 食品衛生検査、成分分析">
+        </div>
+        <div class="form-row">
+          <label>主な商品</label>
+          <input type="text" id="agProducts" placeholder="例: 加工食品、飲料">
+        </div>
+      </div>
+      <div class="form-row">
+        <label>検査の流れ・メモ</label>
+        <textarea id="agFlow" placeholder="申込方法、必要書類、日数、担当者、費用、送付先、注意点など" style="min-height:150px"></textarea>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-danger" id="btnDeleteAgency" style="margin-right:auto;display:none">🗑️ この機関を削除</button>
+        <button class="btn-secondary" onclick="closeModal('agencyModal')">キャンセル</button>
+        <button class="btn-primary" id="btnSaveAgency">保存</button>
       </div>
     </div>
   </div>
@@ -559,23 +677,25 @@ body {
 'use strict';
 
 /* ======================================================================
-   検査結果保存くん — v1.0.0
+   検査結果保存くん — v1.1.0
    データ保存: GitHub (Contents API)
-     - データ:   kensa-data/records.json
+     - データ:   kensa-data/records.json  { version, records[], agencies[] }
      - 画像:     kensa-data/images/{recordId}/{filename}
    ====================================================================== */
 
-const APP_VERSION = 'v1.0.0';
+const APP_VERSION = 'v1.1.0';
 const LS_AUTH = 'kensa_auth';
 const DATA_PATH = 'kensa-data/records.json';
 
 // ----- state -----
 let auth = { pat: '', owner: '', repo: '', branch: 'main' };
-let state = { records: [], sha: null, _loadFailed: false, _wasEmpty: false };
+let state = { records: [], agencies: [], sha: null, _loadFailed: false, _wasEmpty: false };
+let currentTab = 'results';
 let filterResult = 'all';
 let searchText = '';
+let agencySearchText = '';
 
-// 編集モーダルの作業用
+// 検査結果編集モーダルの作業用
 let edit = { id: null, existingImages: [], removedImages: [], pendingFiles: [] };
 
 /* ==================== GitHub helpers ==================== */
@@ -618,10 +738,10 @@ async function loadRecords() {
   try {
     const res = await ghFetch(`contents/${DATA_PATH}?ref=${auth.branch}`);
     if (res.status === 404) {
-      return { records: [], sha: null }; // まだファイルが無い = 新規
+      return { records: [], agencies: [], sha: null }; // まだファイルが無い = 新規
     }
     if (!res.ok) {
-      return { records: [], sha: null, _loadFailed: true };
+      return { records: [], agencies: [], sha: null, _loadFailed: true };
     }
     const data = await res.json();
     let decoded = '';
@@ -632,35 +752,39 @@ async function loadRecords() {
     }
     if (!decoded) {
       toast('⚠️ データファイルが空です。GitHub上のファイルを確認してください', 'error');
-      return { records: [], sha: data.sha, _wasEmpty: true };
+      return { records: [], agencies: [], sha: data.sha, _wasEmpty: true };
     }
     let json;
     try { json = JSON.parse(decoded); }
     catch (e) {
       toast('⚠️ データJSONが壊れています', 'error');
-      return { records: [], sha: data.sha, _loadFailed: true };
+      return { records: [], agencies: [], sha: data.sha, _loadFailed: true };
     }
-    return { records: Array.isArray(json.records) ? json.records : [], sha: data.sha };
+    return {
+      records: Array.isArray(json.records) ? json.records : [],
+      agencies: Array.isArray(json.agencies) ? json.agencies : [],
+      sha: data.sha
+    };
   } catch (e) {
     console.error('loadRecords failed', e);
-    return { records: [], sha: null, _loadFailed: true };
+    return { records: [], agencies: [], sha: null, _loadFailed: true };
   }
 }
 
-async function saveRecords(message, retryCount = 0) {
+async function saveData(message, retryCount = 0) {
   // 事故防止: ロード失敗/空検出時は上書きしない
   if (state._loadFailed || state._wasEmpty) {
     throw new Error('データの読み込みに失敗しているため、上書き保存を中止しました。「🔄更新」で再読み込みしてください。');
   }
-  const content = JSON.stringify({ version: APP_VERSION, records: state.records }, null, 2);
-  const body = { message: message || 'update records', content: b64encode(content), branch: auth.branch };
+  const content = JSON.stringify({ version: APP_VERSION, records: state.records, agencies: state.agencies }, null, 2);
+  const body = { message: message || 'update data', content: b64encode(content), branch: auth.branch };
   if (state.sha) body.sha = state.sha;
   const res = await ghFetch(`contents/${DATA_PATH}`, { method: 'PUT', body: JSON.stringify(body) });
   if (!res.ok) {
     if ((res.status === 409 || res.status === 422) && retryCount < 1) {
       try {
         const head = await ghFetch(`contents/${DATA_PATH}?ref=${auth.branch}`);
-        if (head.ok) { state.sha = (await head.json()).sha; return saveRecords(message, retryCount + 1); }
+        if (head.ok) { state.sha = (await head.json()).sha; return saveData(message, retryCount + 1); }
       } catch (e) {}
     }
     let msg = `GitHub保存失敗 (status:${res.status})`;
@@ -746,12 +870,47 @@ async function handleSaveSettings() {
   if (auth.owner && auth.repo) await reloadFromGitHub();
 }
 
-/* ==================== rendering ==================== */
+/* ==================== helpers ==================== */
 function fmtDate(s) {
   if (!s) return '—';
   return s.length >= 10 ? s.slice(0, 10) : s;
 }
+function esc(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+function escAttr(s) { return esc(s); }
+function todayStr() {
+  const d = new Date();
+  const p = n => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+}
+function agencyNameOf(r) {
+  if (r.agencyId) {
+    const a = state.agencies.find(x => x.id === r.agencyId);
+    if (a) return a.name;
+  }
+  return r.agencyName || '';
+}
 
+/* ==================== render (dispatch) ==================== */
+function render() {
+  document.getElementById('tabResultsCnt').textContent = state.records.length;
+  document.getElementById('tabAgenciesCnt').textContent = state.agencies.length;
+  if (currentTab === 'results') renderResults();
+  else renderAgencies();
+}
+
+function setTab(t) {
+  currentTab = t;
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === t));
+  document.getElementById('toolbarResults').style.display = (t === 'results') ? '' : 'none';
+  document.getElementById('toolbarAgencies').style.display = (t === 'agencies') ? '' : 'none';
+  render();
+}
+
+/* ==================== results ==================== */
 function filteredRecords() {
   const q = searchText.trim().toLowerCase();
   let list = state.records.slice();
@@ -761,10 +920,10 @@ function filteredRecords() {
       (r.itemName || '').toLowerCase().includes(q) ||
       (r.itemNumber || '').toLowerCase().includes(q) ||
       (r.inspector || '').toLowerCase().includes(q) ||
+      (agencyNameOf(r) || '').toLowerCase().includes(q) ||
       (r.note || '').toLowerCase().includes(q)
     );
   }
-  // 新しい順 (検査日 → 作成日)
   list.sort((a, b) => {
     const da = (a.inspectedAt || '') + (a.createdAt || '');
     const db = (b.inspectedAt || '') + (b.createdAt || '');
@@ -773,18 +932,17 @@ function filteredRecords() {
   return list;
 }
 
-function render() {
+function renderResults() {
   const grid = document.getElementById('grid');
   const empty = document.getElementById('emptyState');
+  const agWrap = document.getElementById('agencyTableWrap');
+  agWrap.style.display = 'none';
   const list = filteredRecords();
 
-  document.getElementById('resultCount').textContent =
-    `${list.length} / ${state.records.length} 件`;
+  document.getElementById('resultCount').textContent = `${list.length} / ${state.records.length} 件`;
 
   if (state.records.length === 0) {
-    grid.innerHTML = '';
-    grid.style.display = 'none';
-    empty.style.display = 'block';
+    grid.innerHTML = ''; grid.style.display = 'none'; empty.style.display = 'block';
     if (!auth.owner || !auth.repo) {
       empty.innerHTML = `
         <div class="empty-icon">⚙️</div>
@@ -800,11 +958,8 @@ function render() {
     }
     return;
   }
-
   if (list.length === 0) {
-    grid.innerHTML = '';
-    grid.style.display = 'none';
-    empty.style.display = 'block';
+    grid.innerHTML = ''; grid.style.display = 'none'; empty.style.display = 'block';
     empty.innerHTML = `
       <div class="empty-icon">🔍</div>
       <div class="empty-title">条件に一致する検査結果がありません</div>
@@ -812,12 +967,12 @@ function render() {
     return;
   }
 
-  empty.style.display = 'none';
-  grid.style.display = 'grid';
+  empty.style.display = 'none'; grid.style.display = 'grid';
   grid.innerHTML = list.map(r => {
     const imgs = r.images || [];
     const result = r.result || 'pass';
     const first = imgs[0];
+    const an = agencyNameOf(r);
     const imgHtml = first
       ? `<img src="${escAttr(first.url)}" alt="" loading="lazy">`
       : `<span class="no-img">🖼️</span>`;
@@ -832,6 +987,7 @@ function render() {
         <div class="card-body">
           <div class="card-name">${esc(r.itemName || '(商品名なし)')}</div>
           ${r.itemNumber ? `<div class="card-number">${esc(r.itemNumber)}</div>` : ''}
+          ${an ? `<div class="card-agency">🏢 ${esc(an)}</div>` : ''}
           <div class="card-meta">
             <span>📅 ${fmtDate(r.inspectedAt)}</span>
             <span>${r.inspector ? '👤 ' + esc(r.inspector) : ''}</span>
@@ -841,14 +997,81 @@ function render() {
   }).join('');
 }
 
-function esc(s) {
-  return String(s == null ? '' : s)
-    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+/* ==================== agencies ==================== */
+function filteredAgencies() {
+  const q = agencySearchText.trim().toLowerCase();
+  let list = state.agencies.slice();
+  if (q) {
+    list = list.filter(a =>
+      (a.name || '').toLowerCase().includes(q) ||
+      (a.mainInspection || '').toLowerCase().includes(q) ||
+      (a.mainProducts || '').toLowerCase().includes(q) ||
+      (a.flowNote || '').toLowerCase().includes(q)
+    );
+  }
+  list.sort((a, b) => (a.name || '').localeCompare(b.name || '', 'ja'));
+  return list;
 }
-function escAttr(s) { return esc(s); }
 
-/* ==================== detail ==================== */
+function renderAgencies() {
+  const grid = document.getElementById('grid');
+  const empty = document.getElementById('emptyState');
+  const wrap = document.getElementById('agencyTableWrap');
+  grid.style.display = 'none';
+  const list = filteredAgencies();
+
+  document.getElementById('agencyCount').textContent = `${list.length} / ${state.agencies.length} 件`;
+
+  if (state.agencies.length === 0) {
+    wrap.style.display = 'none'; empty.style.display = 'block';
+    if (!auth.owner || !auth.repo) {
+      empty.innerHTML = `
+        <div class="empty-icon">⚙️</div>
+        <div class="empty-title">まずGitHub保存先を設定してください</div>
+        <div class="empty-desc">右上の ⚙️設定 から owner / repo / PAT を登録すると使えます。</div>
+        <button class="btn-primary" onclick="openSettings()">⚙️ 設定を開く</button>`;
+    } else {
+      empty.innerHTML = `
+        <div class="empty-icon">🏢</div>
+        <div class="empty-title">まだ検査機関がありません</div>
+        <div class="empty-desc">右上の「＋ 検査機関を追加」から登録してください。</div>
+        <button class="btn-primary" onclick="openAgencyEdit(null)">＋ 検査機関を追加</button>`;
+    }
+    return;
+  }
+  if (list.length === 0) {
+    wrap.style.display = 'none'; empty.style.display = 'block';
+    empty.innerHTML = `
+      <div class="empty-icon">🔍</div>
+      <div class="empty-title">条件に一致する検査機関がありません</div>
+      <div class="empty-desc">検索キーワードを変えてみてください。</div>`;
+    return;
+  }
+
+  empty.style.display = 'none'; wrap.style.display = 'block';
+  wrap.innerHTML = `
+    <table class="tbl">
+      <thead>
+        <tr>
+          <th style="width:26%">機関名</th>
+          <th style="width:32%">主な検査内容</th>
+          <th style="width:26%">主な商品</th>
+          <th style="width:16%"></th>
+        </tr>
+      </thead>
+      <tbody>
+        ${list.map(a => `
+          <tr onclick="openAgencyEdit('${a.id}')">
+            <td class="col-name">${esc(a.name || '(名称なし)')}</td>
+            <td>${a.mainInspection ? esc(a.mainInspection) : '<span class="muted">—</span>'}</td>
+            <td>${a.mainProducts ? esc(a.mainProducts) : '<span class="muted">—</span>'}</td>
+            <td class="tbl-actions"><button class="btn-icon" onclick="event.stopPropagation();openAgencyEdit('${a.id}')">詳細を開く</button></td>
+          </tr>`).join('')}
+      </tbody>
+    </table>`;
+}
+
+/* ==================== result detail ==================== */
 function openDetail(id) {
   const r = state.records.find(x => x.id === id);
   if (!r) return;
@@ -858,6 +1081,7 @@ function openDetail(id) {
     <div class="detail-row"><span class="k">合否</span><span class="v"><span class="badge-result ${result}" style="position:static">${result === 'pass' ? '合格' : '不合格'}</span></span></div>
     <div class="detail-row"><span class="k">商品名</span><span class="v">${esc(r.itemName || '—')}</span></div>
     <div class="detail-row"><span class="k">商品番号</span><span class="v" style="font-family:ui-monospace,monospace">${esc(r.itemNumber || '—')}</span></div>
+    <div class="detail-row"><span class="k">検査機関</span><span class="v">${esc(agencyNameOf(r) || '—')}</span></div>
     <div class="detail-row"><span class="k">検査日</span><span class="v">${fmtDate(r.inspectedAt)}</span></div>
     <div class="detail-row"><span class="k">検査者</span><span class="v">${esc(r.inspector || '—')}</span></div>
     <div class="detail-row"><span class="k">メモ</span><span class="v" style="white-space:pre-wrap">${esc(r.note || '—')}</span></div>
@@ -870,7 +1094,16 @@ function openDetail(id) {
   showModal('detailModal');
 }
 
-/* ==================== add / edit ==================== */
+/* ==================== result add / edit ==================== */
+function populateAgencySelect(selectedId) {
+  const sel = document.getElementById('fAgency');
+  const sorted = state.agencies.slice().sort((a, b) => (a.name || '').localeCompare(b.name || '', 'ja'));
+  sel.innerHTML = ['<option value="">（未選択）</option>']
+    .concat(sorted.map(a => `<option value="${escAttr(a.id)}">${esc(a.name || '(名称なし)')}</option>`))
+    .join('');
+  sel.value = selectedId || '';
+}
+
 function openEdit(id) {
   const isNew = !id;
   edit = { id: id || ('rec_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6)),
@@ -886,6 +1119,7 @@ function openEdit(id) {
     document.getElementById('fDate').value = todayStr();
     document.getElementById('fInspector').value = '';
     document.getElementById('fNote').value = '';
+    populateAgencySelect('');
   } else {
     const r = state.records.find(x => x.id === id) || {};
     document.getElementById('fName').value = r.itemName || '';
@@ -895,16 +1129,11 @@ function openEdit(id) {
     document.getElementById('fDate').value = (r.inspectedAt || '').slice(0, 10) || todayStr();
     document.getElementById('fInspector').value = r.inspector || '';
     document.getElementById('fNote').value = r.note || '';
+    populateAgencySelect(r.agencyId || '');
     edit.existingImages = (r.images || []).map(im => ({ ...im }));
   }
   renderEditImages();
   showModal('editModal');
-}
-
-function todayStr() {
-  const d = new Date();
-  const p = n => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
 }
 
 function renderEditImages() {
@@ -933,7 +1162,6 @@ function removePendingImage(i) {
   if (pf && pf._preview) URL.revokeObjectURL(pf._preview);
   renderEditImages();
 }
-
 function addPendingFiles(files) {
   for (const f of files) {
     if (!f.type.startsWith('image/')) continue;
@@ -951,11 +1179,15 @@ async function handleSaveRecord() {
   if (!auth.pat) { toast('保存にはPAT(トークン)が必要です。⚙️設定から登録してください', 'error'); openSettings(); return; }
 
   const result = document.querySelector('input[name="fResult"]:checked').value;
+  const agencyId = document.getElementById('fAgency').value;
+  const ag = state.agencies.find(x => x.id === agencyId);
   const rec = {
     id: edit.id,
     itemName: name,
     itemNumber: number,
     result,
+    agencyId: agencyId || '',
+    agencyName: ag ? ag.name : '',
     inspectedAt: document.getElementById('fDate').value || '',
     inspector: document.getElementById('fInspector').value.trim(),
     note: document.getElementById('fNote').value.trim(),
@@ -966,26 +1198,21 @@ async function handleSaveRecord() {
 
   showLoading(true, '保存中...');
   try {
-    // 1) 画像アップロード
     for (let i = 0; i < edit.pendingFiles.length; i++) {
       showLoading(true, `画像アップロード中... (${i + 1}/${edit.pendingFiles.length})`);
       const meta = await uploadImage(edit.id, edit.pendingFiles[i]);
       rec.images.push(meta);
     }
-    // 2) 削除画像をGitHubから削除
     for (const im of edit.removedImages) {
       showLoading(true, '画像を削除中...');
       await deleteImage(im);
     }
-    // 3) records更新
     const idx = state.records.findIndex(x => x.id === rec.id);
     if (idx >= 0) state.records[idx] = rec; else state.records.push(rec);
 
-    // 4) JSON保存
     showLoading(true, 'データ保存中...');
-    await saveRecords(`save record: ${rec.itemName || rec.itemNumber || rec.id}`);
+    await saveData(`save record: ${rec.itemName || rec.itemNumber || rec.id}`);
 
-    // preview URL開放
     edit.pendingFiles.forEach(pf => pf._preview && URL.revokeObjectURL(pf._preview));
     edit.pendingFiles = [];
     closeModal('editModal');
@@ -1007,8 +1234,77 @@ async function handleDeleteRecord() {
   try {
     for (const im of (r.images || [])) { await deleteImage(im); }
     state.records = state.records.filter(x => x.id !== r.id);
-    await saveRecords(`delete record: ${r.itemName || r.id}`);
+    await saveData(`delete record: ${r.itemName || r.id}`);
     closeModal('editModal');
+    render();
+    toast('削除しました', 'success');
+  } catch (e) {
+    console.error(e);
+    toast('削除失敗: ' + e.message, 'error');
+  } finally {
+    showLoading(false);
+  }
+}
+
+/* ==================== agency add / edit ==================== */
+function openAgencyEdit(id) {
+  const isNew = !id;
+  const a = isNew ? {} : (state.agencies.find(x => x.id === id) || {});
+  document.getElementById('agencyModalTitle').textContent = isNew ? '検査機関を追加' : '検査機関の詳細';
+  document.getElementById('agId').value = id || '';
+  document.getElementById('agName').value = a.name || '';
+  document.getElementById('agInspection').value = a.mainInspection || '';
+  document.getElementById('agProducts').value = a.mainProducts || '';
+  document.getElementById('agFlow').value = a.flowNote || '';
+  document.getElementById('btnDeleteAgency').style.display = isNew ? 'none' : 'inline-block';
+  showModal('agencyModal');
+}
+
+async function handleSaveAgency() {
+  const name = document.getElementById('agName').value.trim();
+  if (!name) { toast('機関名を入力してください', 'error'); return; }
+  if (!auth.owner || !auth.repo) { toast('先に⚙️設定でGitHub保存先を登録してください', 'error'); openSettings(); return; }
+  if (!auth.pat) { toast('保存にはPAT(トークン)が必要です。⚙️設定から登録してください', 'error'); openSettings(); return; }
+
+  const id = document.getElementById('agId').value || ('ag_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6));
+  const existing = state.agencies.find(x => x.id === id);
+  const ag = {
+    id, name,
+    mainInspection: document.getElementById('agInspection').value.trim(),
+    mainProducts: document.getElementById('agProducts').value.trim(),
+    flowNote: document.getElementById('agFlow').value.trim(),
+    createdAt: (existing && existing.createdAt) || new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+
+  showLoading(true, '保存中...');
+  try {
+    const idx = state.agencies.findIndex(x => x.id === id);
+    if (idx >= 0) state.agencies[idx] = ag; else state.agencies.push(ag);
+    await saveData(`save agency: ${name}`);
+    closeModal('agencyModal');
+    render();
+    toast('保存しました', 'success');
+  } catch (e) {
+    console.error(e);
+    toast('保存失敗: ' + e.message, 'error');
+  } finally {
+    showLoading(false);
+  }
+}
+
+async function handleDeleteAgency() {
+  const id = document.getElementById('agId').value;
+  const a = state.agencies.find(x => x.id === id);
+  if (!a) return;
+  const used = state.records.filter(r => r.agencyId === id).length;
+  const warn = used > 0 ? `\n\n※ この機関はすでに ${used} 件の検査結果で使われています。削除しても検査結果側には機関名が記録として残ります。` : '';
+  if (!confirm(`「${a.name}」を削除します。よろしいですか?${warn}`)) return;
+  showLoading(true, '削除中...');
+  try {
+    state.agencies = state.agencies.filter(x => x.id !== id);
+    await saveData(`delete agency: ${a.name}`);
+    closeModal('agencyModal');
     render();
     toast('削除しました', 'success');
   } catch (e) {
@@ -1025,8 +1321,10 @@ async function reloadFromGitHub() {
   showLoading(true, 'GitHubから読み込み中...');
   try {
     const loaded = await loadRecords();
-    state = { records: loaded.records, sha: loaded.sha,
-              _loadFailed: !!loaded._loadFailed, _wasEmpty: !!loaded._wasEmpty };
+    state = {
+      records: loaded.records, agencies: loaded.agencies || [], sha: loaded.sha,
+      _loadFailed: !!loaded._loadFailed, _wasEmpty: !!loaded._wasEmpty
+    };
     render();
     if (!loaded._loadFailed) toast('読み込み完了', 'success');
   } catch (e) {
@@ -1040,8 +1338,11 @@ async function reloadFromGitHub() {
 /* ==================== UI helpers ==================== */
 function showModal(id) { document.getElementById(id).style.display = 'flex'; }
 function closeModal(id) { document.getElementById(id).style.display = 'none'; }
-function goHome() { searchText = ''; document.getElementById('searchInput').value = ''; setFilter('all'); }
-
+function goHome() {
+  setTab('results');
+  searchText = ''; document.getElementById('searchInput').value = '';
+  setFilter('all');
+}
 function openLightbox(url) { document.getElementById('lightboxImg').src = url; document.getElementById('lightbox').classList.add('open'); }
 function closeLightbox() { document.getElementById('lightbox').classList.remove('open'); document.getElementById('lightboxImg').src = ''; }
 
@@ -1061,7 +1362,7 @@ function showLoading(on, text) {
 function setFilter(r) {
   filterResult = r;
   document.querySelectorAll('#resultFilter button').forEach(b => b.classList.toggle('active', b.dataset.result === r));
-  render();
+  if (currentTab === 'results') render();
 }
 
 /* ==================== init ==================== */
@@ -1076,11 +1377,15 @@ function init() {
   document.getElementById('btnAdd').onclick = () => openEdit(null);
   document.getElementById('btnSaveRecord').onclick = handleSaveRecord;
   document.getElementById('btnDeleteRecord').onclick = handleDeleteRecord;
+  document.getElementById('btnAddAgency').onclick = () => openAgencyEdit(null);
+  document.getElementById('btnSaveAgency').onclick = handleSaveAgency;
+  document.getElementById('btnDeleteAgency').onclick = handleDeleteAgency;
+
+  document.querySelectorAll('.tab-btn').forEach(b => { b.onclick = () => setTab(b.dataset.tab); });
 
   document.getElementById('searchInput').addEventListener('input', e => { searchText = e.target.value; render(); });
-  document.querySelectorAll('#resultFilter button').forEach(b => {
-    b.onclick = () => setFilter(b.dataset.result);
-  });
+  document.getElementById('agencySearch').addEventListener('input', e => { agencySearchText = e.target.value; render(); });
+  document.querySelectorAll('#resultFilter button').forEach(b => { b.onclick = () => setFilter(b.dataset.result); });
 
   // image dropzone
   const dz = document.getElementById('imgDropzone');
@@ -1099,12 +1404,12 @@ function init() {
     if (e.key !== 'Escape') return;
     const lb = document.getElementById('lightbox');
     if (lb.classList.contains('open')) { closeLightbox(); return; }
-    ['detailModal', 'editModal', 'settingsModal'].forEach(id => {
+    ['detailModal', 'editModal', 'agencyModal', 'settingsModal'].forEach(id => {
       if (document.getElementById(id).style.display === 'flex') closeModal(id);
     });
   });
   // backdrop クリックで閉じる
-  ['editModal', 'detailModal', 'settingsModal'].forEach(id => {
+  ['editModal', 'detailModal', 'agencyModal', 'settingsModal'].forEach(id => {
     const el = document.getElementById(id);
     el.addEventListener('click', e => { if (e.target === el) closeModal(id); });
   });
@@ -1118,6 +1423,7 @@ window.goHome = goHome;
 window.openSettings = openSettings;
 window.openEdit = openEdit;
 window.openDetail = openDetail;
+window.openAgencyEdit = openAgencyEdit;
 window.closeModal = closeModal;
 window.openLightbox = openLightbox;
 window.closeLightbox = closeLightbox;
