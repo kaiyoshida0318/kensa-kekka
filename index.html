@@ -363,6 +363,9 @@ body {
 .form-row textarea { resize: vertical; min-height: 70px; }
 .form-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .form-hint { display: block; margin-top: 4px; font-size: 11px; color: var(--text-light); }
+.date-range { display: flex; align-items: center; gap: 8px; }
+.date-range input { flex: 1; min-width: 0; }
+.date-range-sep { color: var(--text-muted); font-weight: 600; flex-shrink: 0; }
 
 .btn-primary, .btn-secondary, .btn-danger {
   padding: 9px 18px; border-radius: var(--radius-sm);
@@ -485,7 +488,7 @@ body {
   <div class="header-spacer"></div>
   <div class="header-actions">
     <span class="conn-pill off" id="connPill">未接続</span>
-    <span class="app-version" id="appVersion">v1.3.0</span>
+    <span class="app-version" id="appVersion">v1.4.0</span>
     <button class="btn-icon" id="btnReload" title="GitHubから再読み込み">🔄 更新</button>
     <button class="btn-icon" id="btnSettings" title="設定">⚙️ 設定</button>
   </div>
@@ -543,8 +546,13 @@ body {
       <input type="hidden" id="editId">
       <div class="form-2col">
         <div class="form-row">
-          <label>検査日</label>
-          <input type="date" id="fDate">
+          <label>検査期間</label>
+          <div class="date-range">
+            <input type="date" id="fStart">
+            <span class="date-range-sep">〜</span>
+            <input type="date" id="fEnd">
+          </div>
+          <small class="form-hint">開始日と終了日を選べます（片方だけでもOK）</small>
         </div>
         <div class="form-row">
           <label>合否</label>
@@ -621,7 +629,29 @@ body {
   </div>
 </div>
 
-<!-- ============ Agency Detail/Edit Modal ============ -->
+<!-- ============ Agency Detail Modal (read-only) ============ -->
+<div class="modal-backdrop" id="agencyDetailModal" style="display:none">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="agencyDetailTitle">検査機関</h2>
+      <button class="btn-close" onclick="closeModal('agencyDetailModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="detail-grid" id="agencyDetailGrid"></div>
+      <div class="form-row" style="margin-top:14px;margin-bottom:0">
+        <label>検査商品 <span id="agencyDetailLinkedCount" style="color:var(--text-light);font-weight:400"></span></label>
+        <div class="pchip-wrap" id="agencyDetailLinked"></div>
+        <small class="form-hint">この機関を選んでいる検査結果です。クリックすると検査結果を開けます。</small>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-secondary" onclick="closeModal('agencyDetailModal')">閉じる</button>
+        <button class="btn-primary" id="btnEditAgencyFromDetail">✏️ 編集</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ Agency Edit Modal ============ -->
 <div class="modal-backdrop" id="agencyModal" style="display:none">
   <div class="modal">
     <div class="modal-header">
@@ -637,11 +667,6 @@ body {
       <div class="form-row">
         <label>主な検査内容</label>
         <input type="text" id="agInspection" placeholder="例: 食品衛生検査、成分分析">
-      </div>
-      <div class="form-row" id="agLinkedWrap" style="display:none">
-        <label>検査商品 <span class="muted" id="agLinkedCount" style="color:var(--text-light);font-weight:400"></span></label>
-        <div class="pchip-wrap" id="agLinkedList"></div>
-        <small class="form-hint">この機関を選んでいる検査結果です。クリックすると検査結果を開けます。</small>
       </div>
       <div class="form-row">
         <label>検査の流れ・メモ</label>
@@ -709,13 +734,13 @@ body {
 'use strict';
 
 /* ======================================================================
-   検査結果保存くん — v1.3.0
+   検査結果保存くん — v1.4.0
    データ保存: GitHub (Contents API)
      - データ:   kensa-data/records.json  { version, records[], agencies[] }
      - 画像:     kensa-data/images/{recordId}/{filename}
    ====================================================================== */
 
-const APP_VERSION = 'v1.3.0';
+const APP_VERSION = 'v1.4.0';
 const LS_AUTH = 'kensa_auth';
 const DATA_PATH = 'kensa-data/records.json';
 
@@ -930,6 +955,26 @@ function resultLabel(result) {
   if (result === 'progress') return '検査中';
   return '合格';
 }
+// 検査期間: 開始/終了(なければ旧inspectedAtを単日として扱う)
+function periodStartKey(r) { return r.inspectStart || r.inspectedAt || ''; }
+function fmtPeriod(r) {
+  const s = r.inspectStart || '';
+  const e = r.inspectEnd || '';
+  if (!s && !e) return r.inspectedAt ? fmtDate(r.inspectedAt) : '—';
+  const sv = s ? fmtDate(s) : '';
+  const ev = e ? fmtDate(e) : '';
+  if (sv && ev) return sv === ev ? sv : `${sv} 〜 ${ev}`;
+  if (sv) return `${sv} 〜`;
+  return `〜 ${ev}`;
+}
+function fmtPeriodShort(r) {
+  const s = r.inspectStart || r.inspectedAt || '';
+  const e = r.inspectEnd || '';
+  if (!s && !e) return '—';
+  if (s && e && s !== e) return `${fmtDate(s)}〜`;
+  if (!s && e) return `〜${fmtDate(e)}`;
+  return fmtDate(s || e);
+}
 function recordsForAgency(agId) {
   return state.records
     .filter(r => r.agencyId === agId)
@@ -949,12 +994,13 @@ function renderProductChips(records, mode, agId, limit) {
   let html = shown.map(r => productChipHtml(r, mode)).join('');
   if (limit && records.length > limit) {
     const more = records.length - limit;
-    html += `<button class="pchip pchip-more" onclick="event.stopPropagation();openAgencyEdit('${agId}')">＋${more}件</button>`;
+    html += `<button class="pchip pchip-more" onclick="event.stopPropagation();openAgencyDetail('${agId}')">＋${more}件</button>`;
   }
   return html;
 }
 function jumpToResult(id) {
   closeModal('agencyModal');
+  closeModal('agencyDetailModal');
   closeModal('detailModal');
   openDetail(id);
 }
@@ -990,8 +1036,8 @@ function filteredRecords() {
     );
   }
   list.sort((a, b) => {
-    const da = (a.inspectedAt || '') + (a.createdAt || '');
-    const db = (b.inspectedAt || '') + (b.createdAt || '');
+    const da = periodStartKey(a) + (a.createdAt || '');
+    const db = periodStartKey(b) + (b.createdAt || '');
     return db.localeCompare(da);
   });
   return list;
@@ -1054,7 +1100,7 @@ function renderResults() {
           ${r.itemNumber ? `<div class="card-number">${esc(r.itemNumber)}</div>` : ''}
           ${an ? `<div class="card-agency">🏢 ${esc(an)}</div>` : ''}
           <div class="card-meta">
-            <span>📅 ${fmtDate(r.inspectedAt)}</span>
+            <span>📅 ${fmtPeriodShort(r)}</span>
             <span>${r.inspector ? '👤 ' + esc(r.inspector) : ''}</span>
           </div>
         </div>
@@ -1126,11 +1172,11 @@ function renderAgencies() {
       </thead>
       <tbody>
         ${list.map(a => `
-          <tr onclick="openAgencyEdit('${a.id}')">
+          <tr onclick="openAgencyDetail('${a.id}')">
             <td class="col-name">${esc(a.name || '(名称なし)')}</td>
             <td>${a.mainInspection ? esc(a.mainInspection) : '<span class="muted">—</span>'}</td>
             <td><div class="pchip-wrap">${renderProductChips(recordsForAgency(a.id), 'table', a.id, 4)}</div></td>
-            <td class="tbl-actions"><button class="btn-icon" onclick="event.stopPropagation();openAgencyEdit('${a.id}')">詳細を開く</button></td>
+            <td class="tbl-actions"><button class="btn-icon" onclick="event.stopPropagation();openAgencyDetail('${a.id}')">詳細を開く</button></td>
           </tr>`).join('')}
       </tbody>
     </table>`;
@@ -1143,11 +1189,11 @@ function openDetail(id) {
   const result = r.result || 'pass';
   const agObj = r.agencyId ? state.agencies.find(x => x.id === r.agencyId) : null;
   const agencyCell = agObj
-    ? `<span class="link-agency" onclick="openAgencyEdit('${agObj.id}')">${esc(agObj.name)} 🔎</span>`
+    ? `<span class="link-agency" onclick="openAgencyDetail('${agObj.id}')">${esc(agObj.name)} 🔎</span>`
     : esc(agencyNameOf(r) || '—');
   document.getElementById('detailTitle').textContent = r.itemName || '(商品名なし)';
   document.getElementById('detailGrid').innerHTML = `
-    <div class="detail-row"><span class="k">検査日</span><span class="v">${fmtDate(r.inspectedAt)}</span></div>
+    <div class="detail-row"><span class="k">検査期間</span><span class="v">${fmtPeriod(r)}</span></div>
     <div class="detail-row"><span class="k">合否</span><span class="v"><span class="badge-result ${result}" style="position:static">${resultLabel(result)}</span></span></div>
     <div class="detail-row"><span class="k">商品名</span><span class="v">${esc(r.itemName || '—')}</span></div>
     <div class="detail-row"><span class="k">商品番号</span><span class="v" style="font-family:ui-monospace,monospace">${esc(r.itemNumber || '—')}</span></div>
@@ -1186,7 +1232,8 @@ function openEdit(id) {
     document.getElementById('fName').value = '';
     document.getElementById('fNumber').value = '';
     document.querySelector('input[name="fResult"][value="progress"]').checked = true;
-    document.getElementById('fDate').value = todayStr();
+    document.getElementById('fStart').value = todayStr();
+    document.getElementById('fEnd').value = '';
     document.getElementById('fInspector').value = '';
     document.getElementById('fCost').value = '';
     document.getElementById('fNote').value = '';
@@ -1197,7 +1244,8 @@ function openEdit(id) {
     document.getElementById('fNumber').value = r.itemNumber || '';
     const rv = r.result || 'pass';
     document.querySelector(`input[name="fResult"][value="${rv}"]`).checked = true;
-    document.getElementById('fDate').value = (r.inspectedAt || '').slice(0, 10) || todayStr();
+    document.getElementById('fStart').value = (r.inspectStart || r.inspectedAt || '').slice(0, 10);
+    document.getElementById('fEnd').value = (r.inspectEnd || '').slice(0, 10);
     document.getElementById('fInspector').value = r.inspector || '';
     document.getElementById('fCost').value = r.cost || '';
     document.getElementById('fNote').value = r.note || '';
@@ -1251,6 +1299,9 @@ async function handleSaveRecord() {
   if (!auth.pat) { toast('保存にはPAT(トークン)が必要です。⚙️設定から登録してください', 'error'); openSettings(); return; }
 
   const result = document.querySelector('input[name="fResult"]:checked').value;
+  const start = document.getElementById('fStart').value || '';
+  const end = document.getElementById('fEnd').value || '';
+  if (start && end && end < start) { toast('検査期間の終了日は開始日以降にしてください', 'error'); return; }
   const agencyId = document.getElementById('fAgency').value;
   const ag = state.agencies.find(x => x.id === agencyId);
   const rec = {
@@ -1261,7 +1312,9 @@ async function handleSaveRecord() {
     agencyId: agencyId || '',
     agencyName: ag ? ag.name : '',
     cost: document.getElementById('fCost').value.trim(),
-    inspectedAt: document.getElementById('fDate').value || '',
+    inspectStart: start,
+    inspectEnd: end,
+    inspectedAt: start,
     inspector: document.getElementById('fInspector').value.trim(),
     note: document.getElementById('fNote').value.trim(),
     images: edit.existingImages.slice(),
@@ -1320,28 +1373,34 @@ async function handleDeleteRecord() {
 }
 
 /* ==================== agency add / edit ==================== */
+// 読み取り専用の検査機関詳細
+function openAgencyDetail(id) {
+  const a = state.agencies.find(x => x.id === id);
+  if (!a) return;
+  document.getElementById('agencyDetailTitle').textContent = a.name || '検査機関';
+  document.getElementById('agencyDetailGrid').innerHTML = `
+    <div class="detail-row"><span class="k">機関名</span><span class="v">${esc(a.name || '—')}</span></div>
+    <div class="detail-row"><span class="k">主な検査内容</span><span class="v" style="white-space:pre-wrap">${esc(a.mainInspection || '—')}</span></div>
+    <div class="detail-row"><span class="k">検査の流れ</span><span class="v" style="white-space:pre-wrap">${esc(a.flowNote || '—')}</span></div>
+  `;
+  const recs = recordsForAgency(id);
+  document.getElementById('agencyDetailLinkedCount').textContent = recs.length ? `(${recs.length}件)` : '';
+  document.getElementById('agencyDetailLinked').innerHTML = recs.length
+    ? renderProductChips(recs, 'modal')
+    : '<span class="pchip-empty">この機関を選んでいる検査結果はまだありません</span>';
+  document.getElementById('btnEditAgencyFromDetail').onclick = () => { closeModal('agencyDetailModal'); openAgencyEdit(id); };
+  showModal('agencyDetailModal');
+}
+
 function openAgencyEdit(id) {
   const isNew = !id;
   const a = isNew ? {} : (state.agencies.find(x => x.id === id) || {});
-  document.getElementById('agencyModalTitle').textContent = isNew ? '検査機関を追加' : '検査機関の詳細';
+  document.getElementById('agencyModalTitle').textContent = isNew ? '検査機関を追加' : '検査機関を編集';
   document.getElementById('agId').value = id || '';
   document.getElementById('agName').value = a.name || '';
   document.getElementById('agInspection').value = a.mainInspection || '';
   document.getElementById('agFlow').value = a.flowNote || '';
   document.getElementById('btnDeleteAgency').style.display = isNew ? 'none' : 'inline-block';
-
-  // 検査商品: この機関を選んでいる検査結果を自動表示
-  const linkedWrap = document.getElementById('agLinkedWrap');
-  if (!isNew) {
-    const recs = recordsForAgency(id);
-    document.getElementById('agLinkedCount').textContent = recs.length ? `(${recs.length}件)` : '';
-    document.getElementById('agLinkedList').innerHTML = recs.length
-      ? renderProductChips(recs, 'modal')
-      : '<span class="pchip-empty">この機関を選んでいる検査結果はまだありません</span>';
-    linkedWrap.style.display = 'block';
-  } else {
-    linkedWrap.style.display = 'none';
-  }
   showModal('agencyModal');
 }
 
@@ -1488,14 +1547,14 @@ function init() {
     if (e.key !== 'Escape') return;
     const lb = document.getElementById('lightbox');
     if (lb.classList.contains('open')) { closeLightbox(); return; }
-    // 最前面のモーダルだけ閉じる (機関モーダルは検査結果詳細の上に重なるため優先)
-    const order = ['settingsModal', 'agencyModal', 'editModal', 'detailModal'];
+    // 最前面のモーダルだけ閉じる (重なり順を考慮)
+    const order = ['agencyModal', 'settingsModal', 'editModal', 'agencyDetailModal', 'detailModal'];
     for (const id of order) {
       if (document.getElementById(id).style.display === 'flex') { closeModal(id); break; }
     }
   });
   // backdrop クリックで閉じる
-  ['editModal', 'detailModal', 'agencyModal', 'settingsModal'].forEach(id => {
+  ['editModal', 'detailModal', 'agencyDetailModal', 'agencyModal', 'settingsModal'].forEach(id => {
     const el = document.getElementById(id);
     el.addEventListener('click', e => { if (e.target === el) closeModal(id); });
   });
@@ -1510,6 +1569,7 @@ window.openSettings = openSettings;
 window.openEdit = openEdit;
 window.openDetail = openDetail;
 window.openAgencyEdit = openAgencyEdit;
+window.openAgencyDetail = openAgencyDetail;
 window.jumpToResult = jumpToResult;
 window.closeModal = closeModal;
 window.openLightbox = openLightbox;
