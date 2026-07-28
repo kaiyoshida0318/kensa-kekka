@@ -60,21 +60,6 @@
       "images": [],
       "createdAt": "2026-07-28T09:21:48.797Z",
       "updatedAt": "2026-07-28T09:21:48.797Z"
-    },
-    {
-      "id": "rec_1785230510296_amar",
-      "itemName": "test",
-      "itemNumber": "",
-      "result": "progress",
-      "agencyId": "ag_1785228041873_5r1n",
-      "agencyName": "KISTEC",
-      "cost": "",
-      "inspectedAt": "2026-07-28",
-      "inspector": "",
-      "note": "",
-      "images": [],
-      "createdAt": "2026-07-28T09:21:53.188Z",
-      "updatedAt": "2026-07-28T09:21:53.188Z"
     }
   ],
   "agencies": [
