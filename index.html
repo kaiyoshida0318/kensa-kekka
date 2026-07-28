@@ -233,12 +233,12 @@ body {
 .card:hover { transform: translateY(-3px); box-shadow: var(--shadow-lg); }
 .card-img {
   position: relative;
-  aspect-ratio: 4/3;
-  background: var(--border-light);
+  aspect-ratio: 1/1;
+  background: #fff;
   display: flex; align-items: center; justify-content: center;
   overflow: hidden;
 }
-.card-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.card-img img { width: 100%; height: 100%; object-fit: contain; display: block; }
 .card-img .no-img { color: var(--text-light); font-size: 40px; opacity: 0.5; }
 .card-img-count {
   position: absolute; bottom: 8px; right: 8px;
@@ -488,7 +488,7 @@ body {
   <div class="header-spacer"></div>
   <div class="header-actions">
     <span class="conn-pill off" id="connPill">未接続</span>
-    <span class="app-version" id="appVersion">v1.4.0</span>
+    <span class="app-version" id="appVersion">v1.4.1</span>
     <button class="btn-icon" id="btnReload" title="GitHubから再読み込み">🔄 更新</button>
     <button class="btn-icon" id="btnSettings" title="設定">⚙️ 設定</button>
   </div>
@@ -734,13 +734,13 @@ body {
 'use strict';
 
 /* ======================================================================
-   検査結果保存くん — v1.4.0
+   検査結果保存くん — v1.4.1
    データ保存: GitHub (Contents API)
      - データ:   kensa-data/records.json  { version, records[], agencies[] }
      - 画像:     kensa-data/images/{recordId}/{filename}
    ====================================================================== */
 
-const APP_VERSION = 'v1.4.0';
+const APP_VERSION = 'v1.4.1';
 const LS_AUTH = 'kensa_auth';
 const DATA_PATH = 'kensa-data/records.json';
 
