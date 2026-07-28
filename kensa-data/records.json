@@ -1,5 +1,5 @@
 {
-  "version": "v1.2.0",
+  "version": "v1.3.0",
   "records": [
     {
       "id": "rec_1785224421374_m550",
@@ -15,6 +15,21 @@
       "images": [],
       "createdAt": "2026-07-28T07:40:30.513Z",
       "updatedAt": "2026-07-28T08:54:52.451Z"
+    },
+    {
+      "id": "rec_1785230478917_m7y8",
+      "itemName": "test",
+      "itemNumber": "",
+      "result": "progress",
+      "agencyId": "ag_1785228041873_5r1n",
+      "agencyName": "KISTEC",
+      "cost": "",
+      "inspectedAt": "2026-07-28",
+      "inspector": "",
+      "note": "",
+      "images": [],
+      "createdAt": "2026-07-28T09:21:26.936Z",
+      "updatedAt": "2026-07-28T09:21:26.936Z"
     }
   ],
   "agencies": [
