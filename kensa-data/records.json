@@ -1,0 +1,17 @@
+{
+  "version": "v1.0.0",
+  "records": [
+    {
+      "id": "rec_1785224421374_m550",
+      "itemName": "テスト",
+      "itemNumber": "",
+      "result": "pass",
+      "inspectedAt": "2026-07-28",
+      "inspector": "",
+      "note": "",
+      "images": [],
+      "createdAt": "2026-07-28T07:40:30.513Z",
+      "updatedAt": "2026-07-28T07:40:30.513Z"
+    }
+  ]
+}
