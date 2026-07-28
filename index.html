@@ -290,6 +290,27 @@ body {
 .tbl .muted { color: var(--text-light); }
 .tbl-actions { text-align: right; white-space: nowrap; }
 
+/* clickable agency name in result detail */
+.link-agency { color: var(--primary-dark); font-weight: 500; cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
+.link-agency:hover { color: var(--primary); }
+
+/* product chips (検査商品) */
+.pchip-wrap { display: flex; flex-wrap: wrap; gap: 6px; }
+.pchip {
+  display: inline-flex; align-items: center; gap: 6px; max-width: 220px;
+  padding: 3px 10px; border-radius: 14px; border: 1px solid var(--border);
+  background: var(--surface); font-size: 12px; font-family: inherit; color: var(--text);
+  cursor: pointer; transition: all .12s; line-height: 1.6;
+}
+.pchip .pchip-txt { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pchip:hover { background: var(--primary-light); border-color: var(--primary); color: var(--primary-dark); }
+.pchip-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.pchip-dot.pass { background: var(--pass); }
+.pchip-dot.fail { background: var(--fail); }
+.pchip-dot.progress { background: var(--progress); }
+.pchip-more { border-style: dashed; color: var(--text-muted); }
+.pchip-empty { color: var(--text-light); font-size: 12px; }
+
 /* ===== Empty ===== */
 .empty-state { text-align: center; padding: 80px 20px; color: var(--text-muted); }
 .empty-icon { font-size: 56px; margin-bottom: 16px; }
@@ -464,7 +485,7 @@ body {
   <div class="header-spacer"></div>
   <div class="header-actions">
     <span class="conn-pill off" id="connPill">未接続</span>
-    <span class="app-version" id="appVersion">v1.2.0</span>
+    <span class="app-version" id="appVersion">v1.3.0</span>
     <button class="btn-icon" id="btnReload" title="GitHubから再読み込み">🔄 更新</button>
     <button class="btn-icon" id="btnSettings" title="設定">⚙️ 設定</button>
   </div>
@@ -497,7 +518,7 @@ body {
 <div class="toolbar" id="toolbarAgencies" style="display:none">
   <div class="search-box">
     <span class="search-icon">🔍</span>
-    <input type="text" id="agencySearch" placeholder="機関名・検査内容・商品で検索...">
+    <input type="text" id="agencySearch" placeholder="機関名・検査内容・検査商品で検索...">
   </div>
   <div class="toolbar-spacer"></div>
   <span class="result-count" id="agencyCount"></span>
@@ -528,9 +549,9 @@ body {
         <div class="form-row">
           <label>合否</label>
           <div class="result-radio">
-            <label><input type="radio" name="fResult" value="pass" checked><span class="r-pass">✅ 合格</span></label>
+            <label><input type="radio" name="fResult" value="pass"><span class="r-pass">✅ 合格</span></label>
             <label><input type="radio" name="fResult" value="fail"><span class="r-fail">❌ 不合格</span></label>
-            <label><input type="radio" name="fResult" value="progress"><span class="r-progress">⏳ 検査中</span></label>
+            <label><input type="radio" name="fResult" value="progress" checked><span class="r-progress">⏳ 検査中</span></label>
           </div>
         </div>
       </div>
@@ -613,15 +634,14 @@ body {
         <label>機関名 <span style="color:var(--fail)">*</span></label>
         <input type="text" id="agName" placeholder="例: ○○検査センター">
       </div>
-      <div class="form-2col">
-        <div class="form-row">
-          <label>主な検査内容</label>
-          <input type="text" id="agInspection" placeholder="例: 食品衛生検査、成分分析">
-        </div>
-        <div class="form-row">
-          <label>主な商品</label>
-          <input type="text" id="agProducts" placeholder="例: 加工食品、飲料">
-        </div>
+      <div class="form-row">
+        <label>主な検査内容</label>
+        <input type="text" id="agInspection" placeholder="例: 食品衛生検査、成分分析">
+      </div>
+      <div class="form-row" id="agLinkedWrap" style="display:none">
+        <label>検査商品 <span class="muted" id="agLinkedCount" style="color:var(--text-light);font-weight:400"></span></label>
+        <div class="pchip-wrap" id="agLinkedList"></div>
+        <small class="form-hint">この機関を選んでいる検査結果です。クリックすると検査結果を開けます。</small>
       </div>
       <div class="form-row">
         <label>検査の流れ・メモ</label>
@@ -689,13 +709,13 @@ body {
 'use strict';
 
 /* ======================================================================
-   検査結果保存くん — v1.2.0
+   検査結果保存くん — v1.3.0
    データ保存: GitHub (Contents API)
      - データ:   kensa-data/records.json  { version, records[], agencies[] }
      - 画像:     kensa-data/images/{recordId}/{filename}
    ====================================================================== */
 
-const APP_VERSION = 'v1.2.0';
+const APP_VERSION = 'v1.3.0';
 const LS_AUTH = 'kensa_auth';
 const DATA_PATH = 'kensa-data/records.json';
 
@@ -910,6 +930,34 @@ function resultLabel(result) {
   if (result === 'progress') return '検査中';
   return '合格';
 }
+function recordsForAgency(agId) {
+  return state.records
+    .filter(r => r.agencyId === agId)
+    .sort((a, b) => ((b.inspectedAt || '') + (b.createdAt || '')).localeCompare((a.inspectedAt || '') + (a.createdAt || '')));
+}
+function productChipHtml(r, mode) {
+  const result = r.result || 'pass';
+  const name = r.itemName || r.itemNumber || '(無題)';
+  const handler = mode === 'table'
+    ? `event.stopPropagation();openDetail('${r.id}')`
+    : `jumpToResult('${r.id}')`;
+  return `<button class="pchip" title="${escAttr(name)}" onclick="${handler}"><span class="pchip-dot ${result}"></span><span class="pchip-txt">${esc(name)}</span></button>`;
+}
+function renderProductChips(records, mode, agId, limit) {
+  if (!records.length) return '<span class="pchip-empty">—</span>';
+  const shown = (limit && records.length > limit) ? records.slice(0, limit) : records;
+  let html = shown.map(r => productChipHtml(r, mode)).join('');
+  if (limit && records.length > limit) {
+    const more = records.length - limit;
+    html += `<button class="pchip pchip-more" onclick="event.stopPropagation();openAgencyEdit('${agId}')">＋${more}件</button>`;
+  }
+  return html;
+}
+function jumpToResult(id) {
+  closeModal('agencyModal');
+  closeModal('detailModal');
+  openDetail(id);
+}
 
 /* ==================== render (dispatch) ==================== */
 function render() {
@@ -1022,8 +1070,8 @@ function filteredAgencies() {
     list = list.filter(a =>
       (a.name || '').toLowerCase().includes(q) ||
       (a.mainInspection || '').toLowerCase().includes(q) ||
-      (a.mainProducts || '').toLowerCase().includes(q) ||
-      (a.flowNote || '').toLowerCase().includes(q)
+      (a.flowNote || '').toLowerCase().includes(q) ||
+      recordsForAgency(a.id).some(r => (r.itemName || '').toLowerCase().includes(q) || (r.itemNumber || '').toLowerCase().includes(q))
     );
   }
   list.sort((a, b) => (a.name || '').localeCompare(b.name || '', 'ja'));
@@ -1070,10 +1118,10 @@ function renderAgencies() {
     <table class="tbl">
       <thead>
         <tr>
-          <th style="width:26%">機関名</th>
-          <th style="width:32%">主な検査内容</th>
-          <th style="width:26%">主な商品</th>
-          <th style="width:16%"></th>
+          <th style="width:24%">機関名</th>
+          <th style="width:28%">主な検査内容</th>
+          <th style="width:34%">検査商品</th>
+          <th style="width:14%"></th>
         </tr>
       </thead>
       <tbody>
@@ -1081,7 +1129,7 @@ function renderAgencies() {
           <tr onclick="openAgencyEdit('${a.id}')">
             <td class="col-name">${esc(a.name || '(名称なし)')}</td>
             <td>${a.mainInspection ? esc(a.mainInspection) : '<span class="muted">—</span>'}</td>
-            <td>${a.mainProducts ? esc(a.mainProducts) : '<span class="muted">—</span>'}</td>
+            <td><div class="pchip-wrap">${renderProductChips(recordsForAgency(a.id), 'table', a.id, 4)}</div></td>
             <td class="tbl-actions"><button class="btn-icon" onclick="event.stopPropagation();openAgencyEdit('${a.id}')">詳細を開く</button></td>
           </tr>`).join('')}
       </tbody>
@@ -1093,13 +1141,17 @@ function openDetail(id) {
   const r = state.records.find(x => x.id === id);
   if (!r) return;
   const result = r.result || 'pass';
+  const agObj = r.agencyId ? state.agencies.find(x => x.id === r.agencyId) : null;
+  const agencyCell = agObj
+    ? `<span class="link-agency" onclick="openAgencyEdit('${agObj.id}')">${esc(agObj.name)} 🔎</span>`
+    : esc(agencyNameOf(r) || '—');
   document.getElementById('detailTitle').textContent = r.itemName || '(商品名なし)';
   document.getElementById('detailGrid').innerHTML = `
     <div class="detail-row"><span class="k">検査日</span><span class="v">${fmtDate(r.inspectedAt)}</span></div>
     <div class="detail-row"><span class="k">合否</span><span class="v"><span class="badge-result ${result}" style="position:static">${resultLabel(result)}</span></span></div>
     <div class="detail-row"><span class="k">商品名</span><span class="v">${esc(r.itemName || '—')}</span></div>
     <div class="detail-row"><span class="k">商品番号</span><span class="v" style="font-family:ui-monospace,monospace">${esc(r.itemNumber || '—')}</span></div>
-    <div class="detail-row"><span class="k">検査機関</span><span class="v">${esc(agencyNameOf(r) || '—')}</span></div>
+    <div class="detail-row"><span class="k">検査機関</span><span class="v">${agencyCell}</span></div>
     <div class="detail-row"><span class="k">検査費用</span><span class="v">${esc(r.cost || '—')}</span></div>
     <div class="detail-row"><span class="k">検査者</span><span class="v">${esc(r.inspector || '—')}</span></div>
     <div class="detail-row"><span class="k">メモ</span><span class="v" style="white-space:pre-wrap">${esc(r.note || '—')}</span></div>
@@ -1133,7 +1185,7 @@ function openEdit(id) {
   if (isNew) {
     document.getElementById('fName').value = '';
     document.getElementById('fNumber').value = '';
-    document.querySelector('input[name="fResult"][value="pass"]').checked = true;
+    document.querySelector('input[name="fResult"][value="progress"]').checked = true;
     document.getElementById('fDate').value = todayStr();
     document.getElementById('fInspector').value = '';
     document.getElementById('fCost').value = '';
@@ -1275,9 +1327,21 @@ function openAgencyEdit(id) {
   document.getElementById('agId').value = id || '';
   document.getElementById('agName').value = a.name || '';
   document.getElementById('agInspection').value = a.mainInspection || '';
-  document.getElementById('agProducts').value = a.mainProducts || '';
   document.getElementById('agFlow').value = a.flowNote || '';
   document.getElementById('btnDeleteAgency').style.display = isNew ? 'none' : 'inline-block';
+
+  // 検査商品: この機関を選んでいる検査結果を自動表示
+  const linkedWrap = document.getElementById('agLinkedWrap');
+  if (!isNew) {
+    const recs = recordsForAgency(id);
+    document.getElementById('agLinkedCount').textContent = recs.length ? `(${recs.length}件)` : '';
+    document.getElementById('agLinkedList').innerHTML = recs.length
+      ? renderProductChips(recs, 'modal')
+      : '<span class="pchip-empty">この機関を選んでいる検査結果はまだありません</span>';
+    linkedWrap.style.display = 'block';
+  } else {
+    linkedWrap.style.display = 'none';
+  }
   showModal('agencyModal');
 }
 
@@ -1292,7 +1356,6 @@ async function handleSaveAgency() {
   const ag = {
     id, name,
     mainInspection: document.getElementById('agInspection').value.trim(),
-    mainProducts: document.getElementById('agProducts').value.trim(),
     flowNote: document.getElementById('agFlow').value.trim(),
     createdAt: (existing && existing.createdAt) || new Date().toISOString(),
     updatedAt: new Date().toISOString()
@@ -1425,9 +1488,11 @@ function init() {
     if (e.key !== 'Escape') return;
     const lb = document.getElementById('lightbox');
     if (lb.classList.contains('open')) { closeLightbox(); return; }
-    ['detailModal', 'editModal', 'agencyModal', 'settingsModal'].forEach(id => {
-      if (document.getElementById(id).style.display === 'flex') closeModal(id);
-    });
+    // 最前面のモーダルだけ閉じる (機関モーダルは検査結果詳細の上に重なるため優先)
+    const order = ['settingsModal', 'agencyModal', 'editModal', 'detailModal'];
+    for (const id of order) {
+      if (document.getElementById(id).style.display === 'flex') { closeModal(id); break; }
+    }
   });
   // backdrop クリックで閉じる
   ['editModal', 'detailModal', 'agencyModal', 'settingsModal'].forEach(id => {
@@ -1445,6 +1510,7 @@ window.openSettings = openSettings;
 window.openEdit = openEdit;
 window.openDetail = openDetail;
 window.openAgencyEdit = openAgencyEdit;
+window.jumpToResult = jumpToResult;
 window.closeModal = closeModal;
 window.openLightbox = openLightbox;
 window.closeLightbox = closeLightbox;
