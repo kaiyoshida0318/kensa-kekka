@@ -367,6 +367,16 @@ body {
 .date-range input { flex: 1; min-width: 0; }
 .date-range-sep { color: var(--text-muted); font-weight: 600; flex-shrink: 0; }
 
+/* 検査の基本の流れ */
+.flow-view { white-space: pre-wrap; font-size: 14px; line-height: 1.9; color: var(--text); min-height: 60px; }
+.flow-view.empty { color: var(--text-light); text-align: center; padding: 36px 12px; line-height: 1.7; }
+.flow-textarea {
+  width: 100%; min-height: 320px; padding: 12px 14px;
+  border-radius: var(--radius-sm); border: 1px solid var(--border);
+  font-family: inherit; font-size: 14px; line-height: 1.9; resize: vertical; outline: none;
+}
+.flow-textarea:focus { border-color: var(--primary); }
+
 .btn-primary, .btn-secondary, .btn-danger {
   padding: 9px 18px; border-radius: var(--radius-sm);
   font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit;
@@ -488,7 +498,8 @@ body {
   <div class="header-spacer"></div>
   <div class="header-actions">
     <span class="conn-pill off" id="connPill">未接続</span>
-    <span class="app-version" id="appVersion">v1.4.1</span>
+    <span class="app-version" id="appVersion">v1.5.0</span>
+    <button class="btn-icon" id="btnFlow" title="検査の基本の流れ">📖 検査の流れ</button>
     <button class="btn-icon" id="btnReload" title="GitHubから再読み込み">🔄 更新</button>
     <button class="btn-icon" id="btnSettings" title="設定">⚙️ 設定</button>
   </div>
@@ -717,6 +728,30 @@ body {
   </div>
 </div>
 
+<!-- ============ 検査の基本の流れ Modal ============ -->
+<div class="modal-backdrop" id="flowModal" style="display:none">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <h2>📖 検査の基本の流れ</h2>
+      <button class="btn-close" onclick="closeModal('flowModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <div id="flowView" class="flow-view"></div>
+      <div id="flowEdit" style="display:none">
+        <textarea id="flowText" class="flow-textarea" placeholder="検査全体のおおまかな流れを書いておけます。&#10;&#10;例:&#10;1. 商品を選定する&#10;2. 検査機関に見積・申込&#10;3. サンプルを送付&#10;4. 結果を受領して合否を判定&#10;5. このツールに記録として保存"></textarea>
+      </div>
+      <div class="modal-actions" id="flowViewActions">
+        <button class="btn-secondary" onclick="closeModal('flowModal')">閉じる</button>
+        <button class="btn-primary" id="btnFlowEdit">✏️ 編集</button>
+      </div>
+      <div class="modal-actions" id="flowEditActions" style="display:none">
+        <button class="btn-secondary" id="btnFlowCancel">キャンセル</button>
+        <button class="btn-primary" id="btnFlowSave">保存</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ============ Lightbox ============ -->
 <div class="lightbox" id="lightbox" onclick="closeLightbox()">
   <button class="lightbox-close" onclick="closeLightbox()">×</button>
@@ -734,19 +769,19 @@ body {
 'use strict';
 
 /* ======================================================================
-   検査結果保存くん — v1.4.1
+   検査結果保存くん — v1.5.0
    データ保存: GitHub (Contents API)
      - データ:   kensa-data/records.json  { version, records[], agencies[] }
      - 画像:     kensa-data/images/{recordId}/{filename}
    ====================================================================== */
 
-const APP_VERSION = 'v1.4.1';
+const APP_VERSION = 'v1.5.0';
 const LS_AUTH = 'kensa_auth';
 const DATA_PATH = 'kensa-data/records.json';
 
 // ----- state -----
 let auth = { pat: '', owner: '', repo: '', branch: 'main' };
-let state = { records: [], agencies: [], sha: null, _loadFailed: false, _wasEmpty: false };
+let state = { records: [], agencies: [], flow: '', sha: null, _loadFailed: false, _wasEmpty: false };
 let currentTab = 'results';
 let filterResult = 'all';
 let searchText = '';
@@ -820,6 +855,7 @@ async function loadRecords() {
     return {
       records: Array.isArray(json.records) ? json.records : [],
       agencies: Array.isArray(json.agencies) ? json.agencies : [],
+      flow: typeof json.flow === 'string' ? json.flow : '',
       sha: data.sha
     };
   } catch (e) {
@@ -833,7 +869,7 @@ async function saveData(message, retryCount = 0) {
   if (state._loadFailed || state._wasEmpty) {
     throw new Error('データの読み込みに失敗しているため、上書き保存を中止しました。「🔄更新」で再読み込みしてください。');
   }
-  const content = JSON.stringify({ version: APP_VERSION, records: state.records, agencies: state.agencies }, null, 2);
+  const content = JSON.stringify({ version: APP_VERSION, records: state.records, agencies: state.agencies, flow: state.flow || '' }, null, 2);
   const body = { message: message || 'update data', content: b64encode(content), branch: auth.branch };
   if (state.sha) body.sha = state.sha;
   const res = await ghFetch(`contents/${DATA_PATH}`, { method: 'PUT', body: JSON.stringify(body) });
@@ -1465,7 +1501,7 @@ async function reloadFromGitHub() {
   try {
     const loaded = await loadRecords();
     state = {
-      records: loaded.records, agencies: loaded.agencies || [], sha: loaded.sha,
+      records: loaded.records, agencies: loaded.agencies || [], flow: loaded.flow || '', sha: loaded.sha,
       _loadFailed: !!loaded._loadFailed, _wasEmpty: !!loaded._wasEmpty
     };
     render();
@@ -1473,6 +1509,50 @@ async function reloadFromGitHub() {
   } catch (e) {
     console.error(e);
     toast('読み込み失敗: ' + e.message, 'error');
+  } finally {
+    showLoading(false);
+  }
+}
+
+/* ==================== 検査の基本の流れ ==================== */
+function renderFlowView() {
+  const v = document.getElementById('flowView');
+  if (state.flow && state.flow.trim()) {
+    v.className = 'flow-view';
+    v.textContent = state.flow;
+  } else {
+    v.className = 'flow-view empty';
+    v.textContent = 'まだ記入されていません。「✏️ 編集」から検査のおおまかな流れを書けます。';
+  }
+}
+function flowSetMode(mode) {
+  const edit = mode === 'edit';
+  document.getElementById('flowView').style.display = edit ? 'none' : 'block';
+  document.getElementById('flowEdit').style.display = edit ? 'block' : 'none';
+  document.getElementById('flowViewActions').style.display = edit ? 'none' : 'flex';
+  document.getElementById('flowEditActions').style.display = edit ? 'flex' : 'none';
+  if (edit) document.getElementById('flowText').value = state.flow || '';
+}
+function openFlow() {
+  renderFlowView();
+  flowSetMode('view');
+  showModal('flowModal');
+}
+async function handleFlowSave() {
+  if (!auth.owner || !auth.repo) { toast('先に⚙️設定でGitHub保存先を登録してください', 'error'); openSettings(); return; }
+  if (!auth.pat) { toast('保存にはPAT(トークン)が必要です。⚙️設定から登録してください', 'error'); openSettings(); return; }
+  const prev = state.flow;
+  state.flow = document.getElementById('flowText').value.trim();
+  showLoading(true, '保存中...');
+  try {
+    await saveData('update flow');
+    renderFlowView();
+    flowSetMode('view');
+    toast('保存しました', 'success');
+  } catch (e) {
+    state.flow = prev;
+    console.error(e);
+    toast('保存失敗: ' + e.message, 'error');
   } finally {
     showLoading(false);
   }
@@ -1517,6 +1597,10 @@ function init() {
   document.getElementById('btnSettings').onclick = openSettings;
   document.getElementById('btnSaveSettings').onclick = handleSaveSettings;
   document.getElementById('btnReload').onclick = reloadFromGitHub;
+  document.getElementById('btnFlow').onclick = openFlow;
+  document.getElementById('btnFlowEdit').onclick = () => flowSetMode('edit');
+  document.getElementById('btnFlowCancel').onclick = () => flowSetMode('view');
+  document.getElementById('btnFlowSave').onclick = handleFlowSave;
   document.getElementById('btnAdd').onclick = () => openEdit(null);
   document.getElementById('btnSaveRecord').onclick = handleSaveRecord;
   document.getElementById('btnDeleteRecord').onclick = handleDeleteRecord;
@@ -1548,13 +1632,13 @@ function init() {
     const lb = document.getElementById('lightbox');
     if (lb.classList.contains('open')) { closeLightbox(); return; }
     // 最前面のモーダルだけ閉じる (重なり順を考慮)
-    const order = ['agencyModal', 'settingsModal', 'editModal', 'agencyDetailModal', 'detailModal'];
+    const order = ['flowModal', 'agencyModal', 'settingsModal', 'editModal', 'agencyDetailModal', 'detailModal'];
     for (const id of order) {
       if (document.getElementById(id).style.display === 'flex') { closeModal(id); break; }
     }
   });
   // backdrop クリックで閉じる
-  ['editModal', 'detailModal', 'agencyDetailModal', 'agencyModal', 'settingsModal'].forEach(id => {
+  ['editModal', 'detailModal', 'agencyDetailModal', 'agencyModal', 'settingsModal', 'flowModal'].forEach(id => {
     const el = document.getElementById(id);
     el.addEventListener('click', e => { if (e.target === el) closeModal(id); });
   });
