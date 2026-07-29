@@ -32,15 +32,6 @@
   ],
   "agencies": [
     {
-      "id": "ag_1785228041873_5r1n",
-      "name": "KISTEC",
-      "mainInspection": "元素分析",
-      "mainProducts": "",
-      "flowNote": "",
-      "createdAt": "2026-07-28T08:40:41.873Z",
-      "updatedAt": "2026-07-28T08:43:55.304Z"
-    },
-    {
       "id": "ag_1785293718614_xj45",
       "name": "CRC食品環境衛生研究所",
       "mainInspection": "成分検査",
