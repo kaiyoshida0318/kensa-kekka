@@ -1,5 +1,5 @@
 {
-  "version": "v1.4.1",
+  "version": "v1.5.0",
   "records": [
     {
       "id": "rec_1785224421374_m550",
@@ -28,23 +28,6 @@
       ],
       "createdAt": "2026-07-28T07:40:30.513Z",
       "updatedAt": "2026-07-29T02:55:32.932Z"
-    },
-    {
-      "id": "rec_1785294029580_y853",
-      "itemName": "基本の流れ",
-      "itemNumber": "",
-      "result": "pass",
-      "agencyId": "",
-      "agencyName": "",
-      "cost": "",
-      "inspectStart": "2026-01-01",
-      "inspectEnd": "",
-      "inspectedAt": "2026-01-01",
-      "inspector": "",
-      "note": "",
-      "images": [],
-      "createdAt": "2026-07-29T03:01:00.881Z",
-      "updatedAt": "2026-07-29T03:01:00.881Z"
     }
   ],
   "agencies": [
@@ -56,5 +39,6 @@
       "createdAt": "2026-07-29T02:55:18.614Z",
       "updatedAt": "2026-07-29T02:55:18.614Z"
     }
-  ]
+  ],
+  "flow": ""
 }
