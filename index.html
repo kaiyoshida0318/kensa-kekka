@@ -367,7 +367,11 @@ body {
 .date-range input { flex: 1; min-width: 0; }
 .date-range-sep { color: var(--text-muted); font-weight: 600; flex-shrink: 0; }
 
-/* 検査の基本の流れ */
+/* 検査の基本の流れ (タブ) */
+.flow-panel-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+.flow-panel-title { font-size: 16px; font-weight: 700; }
+.flow-panel-actions { display: flex; gap: 8px; }
+.flow-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 22px 24px; max-width: 900px; box-shadow: var(--shadow); }
 .flow-view { white-space: pre-wrap; font-size: 14px; line-height: 1.9; color: var(--text); min-height: 60px; }
 .flow-view.empty { color: var(--text-light); text-align: center; padding: 36px 12px; line-height: 1.7; }
 .flow-textarea {
@@ -498,8 +502,7 @@ body {
   <div class="header-spacer"></div>
   <div class="header-actions">
     <span class="conn-pill off" id="connPill">未接続</span>
-    <span class="app-version" id="appVersion">v1.5.0</span>
-    <button class="btn-icon" id="btnFlow" title="検査の基本の流れ">📖 検査の流れ</button>
+    <span class="app-version" id="appVersion">v1.6.0</span>
     <button class="btn-icon" id="btnReload" title="GitHubから再読み込み">🔄 更新</button>
     <button class="btn-icon" id="btnSettings" title="設定">⚙️ 設定</button>
   </div>
@@ -509,6 +512,7 @@ body {
 <div class="tab-bar">
   <button class="tab-btn active" data-tab="results" id="tabResults">📋 検査結果 <span class="cnt" id="tabResultsCnt"></span></button>
   <button class="tab-btn" data-tab="agencies" id="tabAgencies">🏢 検査機関 <span class="cnt" id="tabAgenciesCnt"></span></button>
+  <button class="tab-btn" data-tab="flow" id="tabFlow">📖 検査の流れ</button>
 </div>
 
 <!-- ============ Toolbar: results ============ -->
@@ -543,6 +547,24 @@ body {
 <main class="content">
   <div class="grid" id="grid"></div>
   <div id="agencyTableWrap" style="display:none"></div>
+  <div id="flowPanel" style="display:none">
+    <div class="flow-panel-bar">
+      <div class="flow-panel-title">📖 検査の基本の流れ</div>
+      <div class="flow-panel-actions" id="flowViewActions">
+        <button class="btn-add" id="btnFlowEdit">✏️ 編集</button>
+      </div>
+      <div class="flow-panel-actions" id="flowEditActions" style="display:none">
+        <button class="btn-secondary" id="btnFlowCancel">キャンセル</button>
+        <button class="btn-primary" id="btnFlowSave">保存</button>
+      </div>
+    </div>
+    <div class="flow-card">
+      <div id="flowView" class="flow-view"></div>
+      <div id="flowEdit" style="display:none">
+        <textarea id="flowText" class="flow-textarea" placeholder="検査全体のおおまかな流れを書いておけます。&#10;&#10;例:&#10;1. 商品を選定する&#10;2. 検査機関に見積・申込&#10;3. サンプルを送付&#10;4. 結果を受領して合否を判定&#10;5. このツールに記録として保存"></textarea>
+      </div>
+    </div>
+  </div>
   <div class="empty-state" id="emptyState" style="display:none"></div>
 </main>
 
@@ -728,30 +750,6 @@ body {
   </div>
 </div>
 
-<!-- ============ 検査の基本の流れ Modal ============ -->
-<div class="modal-backdrop" id="flowModal" style="display:none">
-  <div class="modal modal-lg">
-    <div class="modal-header">
-      <h2>📖 検査の基本の流れ</h2>
-      <button class="btn-close" onclick="closeModal('flowModal')">×</button>
-    </div>
-    <div class="modal-body">
-      <div id="flowView" class="flow-view"></div>
-      <div id="flowEdit" style="display:none">
-        <textarea id="flowText" class="flow-textarea" placeholder="検査全体のおおまかな流れを書いておけます。&#10;&#10;例:&#10;1. 商品を選定する&#10;2. 検査機関に見積・申込&#10;3. サンプルを送付&#10;4. 結果を受領して合否を判定&#10;5. このツールに記録として保存"></textarea>
-      </div>
-      <div class="modal-actions" id="flowViewActions">
-        <button class="btn-secondary" onclick="closeModal('flowModal')">閉じる</button>
-        <button class="btn-primary" id="btnFlowEdit">✏️ 編集</button>
-      </div>
-      <div class="modal-actions" id="flowEditActions" style="display:none">
-        <button class="btn-secondary" id="btnFlowCancel">キャンセル</button>
-        <button class="btn-primary" id="btnFlowSave">保存</button>
-      </div>
-    </div>
-  </div>
-</div>
-
 <!-- ============ Lightbox ============ -->
 <div class="lightbox" id="lightbox" onclick="closeLightbox()">
   <button class="lightbox-close" onclick="closeLightbox()">×</button>
@@ -769,13 +767,13 @@ body {
 'use strict';
 
 /* ======================================================================
-   検査結果保存くん — v1.5.0
+   検査結果保存くん — v1.6.0
    データ保存: GitHub (Contents API)
      - データ:   kensa-data/records.json  { version, records[], agencies[] }
      - 画像:     kensa-data/images/{recordId}/{filename}
    ====================================================================== */
 
-const APP_VERSION = 'v1.5.0';
+const APP_VERSION = 'v1.6.0';
 const LS_AUTH = 'kensa_auth';
 const DATA_PATH = 'kensa-data/records.json';
 
@@ -1045,8 +1043,10 @@ function jumpToResult(id) {
 function render() {
   document.getElementById('tabResultsCnt').textContent = state.records.length;
   document.getElementById('tabAgenciesCnt').textContent = state.agencies.length;
+  document.getElementById('flowPanel').style.display = (currentTab === 'flow') ? 'block' : 'none';
   if (currentTab === 'results') renderResults();
-  else renderAgencies();
+  else if (currentTab === 'agencies') renderAgencies();
+  else renderFlowPanel();
 }
 
 function setTab(t) {
@@ -1054,7 +1054,15 @@ function setTab(t) {
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === t));
   document.getElementById('toolbarResults').style.display = (t === 'results') ? '' : 'none';
   document.getElementById('toolbarAgencies').style.display = (t === 'agencies') ? '' : 'none';
+  if (t === 'flow') flowSetMode('view');
   render();
+}
+
+function renderFlowPanel() {
+  document.getElementById('grid').style.display = 'none';
+  document.getElementById('agencyTableWrap').style.display = 'none';
+  document.getElementById('emptyState').style.display = 'none';
+  renderFlowView();
 }
 
 /* ==================== results ==================== */
@@ -1533,11 +1541,6 @@ function flowSetMode(mode) {
   document.getElementById('flowEditActions').style.display = edit ? 'flex' : 'none';
   if (edit) document.getElementById('flowText').value = state.flow || '';
 }
-function openFlow() {
-  renderFlowView();
-  flowSetMode('view');
-  showModal('flowModal');
-}
 async function handleFlowSave() {
   if (!auth.owner || !auth.repo) { toast('先に⚙️設定でGitHub保存先を登録してください', 'error'); openSettings(); return; }
   if (!auth.pat) { toast('保存にはPAT(トークン)が必要です。⚙️設定から登録してください', 'error'); openSettings(); return; }
@@ -1597,7 +1600,6 @@ function init() {
   document.getElementById('btnSettings').onclick = openSettings;
   document.getElementById('btnSaveSettings').onclick = handleSaveSettings;
   document.getElementById('btnReload').onclick = reloadFromGitHub;
-  document.getElementById('btnFlow').onclick = openFlow;
   document.getElementById('btnFlowEdit').onclick = () => flowSetMode('edit');
   document.getElementById('btnFlowCancel').onclick = () => flowSetMode('view');
   document.getElementById('btnFlowSave').onclick = handleFlowSave;
@@ -1632,13 +1634,13 @@ function init() {
     const lb = document.getElementById('lightbox');
     if (lb.classList.contains('open')) { closeLightbox(); return; }
     // 最前面のモーダルだけ閉じる (重なり順を考慮)
-    const order = ['flowModal', 'agencyModal', 'settingsModal', 'editModal', 'agencyDetailModal', 'detailModal'];
+    const order = ['agencyModal', 'settingsModal', 'editModal', 'agencyDetailModal', 'detailModal'];
     for (const id of order) {
       if (document.getElementById(id).style.display === 'flex') { closeModal(id); break; }
     }
   });
   // backdrop クリックで閉じる
-  ['editModal', 'detailModal', 'agencyDetailModal', 'agencyModal', 'settingsModal', 'flowModal'].forEach(id => {
+  ['editModal', 'detailModal', 'agencyDetailModal', 'agencyModal', 'settingsModal'].forEach(id => {
     const el = document.getElementById(id);
     el.addEventListener('click', e => { if (e.target === el) closeModal(id); });
   });
