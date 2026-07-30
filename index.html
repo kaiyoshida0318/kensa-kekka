@@ -212,6 +212,16 @@ body {
 .cat-add-inline input { flex: 1; min-width: 0; }
 .btn-cat-confirm { white-space: nowrap; padding: 8px 12px; font-size: 12px; border: none; border-radius: 8px; background: var(--primary); color: #fff; cursor: pointer; }
 .btn-cat-cancel { padding: 6px 10px; font-size: 14px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text-light); cursor: pointer; line-height: 1; }
+.btn-cat-manage { padding: 8px 10px; font-size: 13px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text-light); cursor: pointer; line-height: 1; }
+.btn-cat-manage:hover { background: var(--bg); color: var(--text); }
+
+/* 検査分類の管理モーダル */
+.cat-manage-row { display: flex; gap: 8px; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border); }
+.cat-manage-row input { flex: 1; min-width: 0; }
+.cat-manage-count { font-size: 12px; color: var(--text-light); white-space: nowrap; }
+.cat-manage-save { white-space: nowrap; padding: 7px 12px; font-size: 12px; border: none; border-radius: 8px; background: var(--primary); color: #fff; cursor: pointer; }
+.cat-manage-del { padding: 7px 10px; font-size: 13px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--fail); cursor: pointer; }
+.cat-manage-empty { color: var(--text-light); font-size: 13px; padding: 10px 0; }
 
 .toolbar-spacer { flex: 1; }
 .result-count { font-size: 12px; color: var(--text-light); white-space: nowrap; }
@@ -517,7 +527,7 @@ body {
   <div class="header-spacer"></div>
   <div class="header-actions">
     <span class="conn-pill off" id="connPill">未接続</span>
-    <span class="app-version" id="appVersion">v1.7.1</span>
+    <span class="app-version" id="appVersion">v1.8.0</span>
     <button class="btn-icon" id="btnReload" title="GitHubから再読み込み">🔄 更新</button>
     <button class="btn-icon" id="btnSettings" title="設定">⚙️ 設定</button>
   </div>
@@ -545,6 +555,7 @@ body {
   <div class="filter-group">
     <label class="filter-label">検査分類</label>
     <select id="categoryFilter" class="filter-select"><option value="all">すべて</option></select>
+    <button type="button" class="btn-cat-manage" id="btnManageCategory" title="検査分類の管理（名前の変更・削除）">⚙</button>
   </div>
   <div class="toolbar-spacer"></div>
   <span class="result-count" id="resultCount"></span>
@@ -751,6 +762,27 @@ body {
   </div>
 </div>
 
+<!-- ============ Category Manage Modal ============ -->
+<div class="modal-backdrop" id="categoryManageModal" style="display:none">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>🏷️ 検査分類の管理</h2>
+      <button class="btn-close" onclick="closeModal('categoryManageModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <div id="catManageList"></div>
+      <div class="cat-add-inline" style="margin-top:14px">
+        <input type="text" id="catManageNew" placeholder="新しい検査分類名">
+        <button type="button" class="btn-cat-confirm" id="btnCatManageAdd">＋ 追加</button>
+      </div>
+      <small class="form-hint" style="margin-top:8px">名前を書き換えて「保存」でリネーム。削除しても、その分類を使っている検査結果側の記録（分類名）は残ります。</small>
+      <div class="modal-actions">
+        <button class="btn-secondary" onclick="closeModal('categoryManageModal')">閉じる</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ============ Settings Modal ============ -->
 <div class="modal-backdrop" id="settingsModal" style="display:none">
   <div class="modal">
@@ -804,13 +836,13 @@ body {
 'use strict';
 
 /* ======================================================================
-   検査結果保存くん — v1.7.1
+   検査結果保存くん — v1.8.0
    データ保存: GitHub (Contents API)
      - データ:   kensa-data/records.json  { version, records[], agencies[] }
      - 画像:     kensa-data/images/{recordId}/{filename}
    ====================================================================== */
 
-const APP_VERSION = 'v1.7.1';
+const APP_VERSION = 'v1.8.0';
 const LS_AUTH = 'kensa_auth';
 const DATA_PATH = 'kensa-data/records.json';
 
@@ -1360,6 +1392,108 @@ function confirmAddCategory() {
   showCatAdd(false);
 }
 
+/* ---- 検査分類の管理(リネーム/削除) ---- */
+function recordsUsingCategory(id) {
+  return state.records.filter(r => r.categoryId === id).length;
+}
+
+function openCategoryManage() {
+  renderCatManage();
+  document.getElementById('catManageNew').value = '';
+  showModal('categoryManageModal');
+}
+
+function renderCatManage() {
+  const wrap = document.getElementById('catManageList');
+  const cats = (state.categories || []).slice().sort((a, b) => (a.name || '').localeCompare(b.name || '', 'ja'));
+  if (!cats.length) {
+    wrap.innerHTML = '<div class="cat-manage-empty">まだ検査分類がありません。下の入力欄から追加できます。</div>';
+    return;
+  }
+  wrap.innerHTML = cats.map(c => {
+    const n = recordsUsingCategory(c.id);
+    return `<div class="cat-manage-row">
+      <input type="text" value="${escAttr(c.name || '')}" data-id="${escAttr(c.id)}">
+      <span class="cat-manage-count">${n}件で使用</span>
+      <button type="button" class="cat-manage-save" onclick="renameCategory('${escAttr(c.id)}')">保存</button>
+      <button type="button" class="cat-manage-del" title="削除" onclick="deleteCategory('${escAttr(c.id)}')">🗑️</button>
+    </div>`;
+  }).join('');
+}
+
+function catAuthOk() {
+  if (!auth.owner || !auth.repo) { toast('先に⚙️設定でGitHub保存先を登録してください', 'error'); return false; }
+  if (!auth.pat) { toast('保存にはPAT(トークン)が必要です。⚙️設定から登録してください', 'error'); return false; }
+  return true;
+}
+
+async function addCategoryFromManage() {
+  const name = document.getElementById('catManageNew').value.trim();
+  if (!name) { toast('検査分類名を入力してください', 'error'); return; }
+  if ((state.categories || []).some(x => (x.name || '').trim() === name)) { toast('同じ名前の検査分類が既にあります', 'error'); return; }
+  if (!catAuthOk()) return;
+  if (!Array.isArray(state.categories)) state.categories = [];
+  state.categories.push({ id: 'cat_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6), name });
+  showLoading(true, '保存中...');
+  try {
+    await saveData(`add category: ${name}`);
+    document.getElementById('catManageNew').value = '';
+    renderCatManage(); render();
+    toast('追加しました', 'success');
+  } catch (e) { console.error(e); toast('保存失敗: ' + e.message, 'error'); }
+  finally { showLoading(false); }
+}
+
+async function renameCategory(id) {
+  const input = document.querySelector(`#catManageList input[data-id="${id}"]`);
+  if (!input) return;
+  const newName = input.value.trim();
+  const c = (state.categories || []).find(x => x.id === id);
+  if (!c) return;
+  if (!newName) { toast('分類名を空にはできません', 'error'); input.value = c.name || ''; return; }
+  if (newName === c.name) { toast('変更がありません', 'error'); return; }
+  if ((state.categories || []).some(x => x.id !== id && (x.name || '').trim() === newName)) { toast('同じ名前の検査分類が既にあります', 'error'); return; }
+  if (!catAuthOk()) return;
+  const prev = c.name;
+  c.name = newName;
+  // 記録側の分類名(denormalized)も更新
+  state.records.forEach(r => { if (r.categoryId === id) r.categoryName = newName; });
+  if (filterCategory === prev) filterCategory = newName;
+  showLoading(true, '保存中...');
+  try {
+    await saveData(`rename category: ${prev} -> ${newName}`);
+    renderCatManage(); render();
+    toast('名前を変更しました', 'success');
+  } catch (e) {
+    console.error(e);
+    c.name = prev; state.records.forEach(r => { if (r.categoryId === id) r.categoryName = prev; });
+    toast('保存失敗: ' + e.message, 'error');
+  } finally { showLoading(false); }
+}
+
+async function deleteCategory(id) {
+  const c = (state.categories || []).find(x => x.id === id);
+  if (!c) return;
+  const n = recordsUsingCategory(id);
+  const msg = n > 0
+    ? `検査分類「${c.name}」を削除します。\n${n}件の検査結果で使用中ですが、各記録に保存された分類名は残ります(選択肢からのみ削除されます)。よろしいですか?`
+    : `検査分類「${c.name}」を削除します。よろしいですか?`;
+  if (!confirm(msg)) return;
+  if (!catAuthOk()) return;
+  const prevList = state.categories.slice();
+  state.categories = state.categories.filter(x => x.id !== id);
+  showLoading(true, '削除中...');
+  try {
+    await saveData(`delete category: ${c.name}`);
+    renderCatManage(); render();
+    toast('削除しました', 'success');
+  } catch (e) {
+    console.error(e);
+    state.categories = prevList;
+    toast('削除失敗: ' + e.message, 'error');
+  } finally { showLoading(false); }
+}
+
 function openEdit(id) {
   const isNew = !id;
   edit = { id: id || ('rec_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6)),
@@ -1732,6 +1866,13 @@ function init() {
     if (e.key === 'Enter') { e.preventDefault(); confirmAddCategory(); }
   });
 
+  // 検査分類の管理(リネーム/削除)
+  document.getElementById('btnManageCategory').onclick = openCategoryManage;
+  document.getElementById('btnCatManageAdd').onclick = addCategoryFromManage;
+  document.getElementById('catManageNew').addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); addCategoryFromManage(); }
+  });
+
   // image dropzone
   const dz = document.getElementById('imgDropzone');
   const fi = document.getElementById('fImages');
@@ -1750,13 +1891,13 @@ function init() {
     const lb = document.getElementById('lightbox');
     if (lb.classList.contains('open')) { closeLightbox(); return; }
     // 最前面のモーダルだけ閉じる (重なり順を考慮)
-    const order = ['agencyModal', 'settingsModal', 'editModal', 'agencyDetailModal', 'detailModal'];
+    const order = ['categoryManageModal', 'agencyModal', 'settingsModal', 'editModal', 'agencyDetailModal', 'detailModal'];
     for (const id of order) {
       if (document.getElementById(id).style.display === 'flex') { closeModal(id); break; }
     }
   });
   // backdrop クリックで閉じる
-  ['editModal', 'detailModal', 'agencyDetailModal', 'agencyModal', 'settingsModal'].forEach(id => {
+  ['editModal', 'detailModal', 'agencyDetailModal', 'agencyModal', 'settingsModal', 'categoryManageModal'].forEach(id => {
     const el = document.getElementById(id);
     el.addEventListener('click', e => { if (e.target === el) closeModal(id); });
   });
