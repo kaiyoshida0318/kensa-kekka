@@ -59,9 +59,20 @@
       "inspectedAt": "2024-11-28",
       "inspector": "遠藤",
       "note": "",
-      "images": [],
+      "images": [
+        {
+          "id": "img_1785404103806_cngfqa",
+          "filename": "1785404102054_h8visr_baby-24-01-sox-b-01b.jpg",
+          "originalName": "baby-24-01-sox-b-01b.jpg",
+          "path": "kensa-data/images/rec_1785402555634_v92b/1785404102054_h8visr_baby-24-01-sox-b-01b.jpg",
+          "sha": "17d09aa1919aad3fc8c36c829d41911f88a8d151",
+          "url": "https://raw.githubusercontent.com/kaiyoshida0318/kensa-kekka/main/kensa-data/images/rec_1785402555634_v92b/1785404102054_h8visr_baby-24-01-sox-b-01b.jpg",
+          "size": 134107,
+          "uploadedAt": "2026-07-30T09:35:03.807Z"
+        }
+      ],
       "createdAt": "2026-07-30T09:11:15.360Z",
-      "updatedAt": "2026-07-30T09:14:12.030Z"
+      "updatedAt": "2026-07-30T09:35:02.054Z"
     },
     {
       "id": "rec_1785402746243_a2bv",
