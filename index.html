@@ -368,7 +368,7 @@ body {
 .date-range-sep { color: var(--text-muted); font-weight: 600; flex-shrink: 0; }
 
 /* 検査の基本の流れ (タブ) */
-.flow-panel-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+.flow-panel-bar { display: flex; align-items: center; justify-content: flex-end; gap: 12px; margin-bottom: 14px; }
 .flow-panel-title { font-size: 16px; font-weight: 700; }
 .flow-panel-actions { display: flex; gap: 8px; }
 .flow-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 22px 24px; max-width: 900px; box-shadow: var(--shadow); }
@@ -502,7 +502,7 @@ body {
   <div class="header-spacer"></div>
   <div class="header-actions">
     <span class="conn-pill off" id="connPill">未接続</span>
-    <span class="app-version" id="appVersion">v1.6.0</span>
+    <span class="app-version" id="appVersion">v1.6.1</span>
     <button class="btn-icon" id="btnReload" title="GitHubから再読み込み">🔄 更新</button>
     <button class="btn-icon" id="btnSettings" title="設定">⚙️ 設定</button>
   </div>
@@ -512,7 +512,7 @@ body {
 <div class="tab-bar">
   <button class="tab-btn active" data-tab="results" id="tabResults">📋 検査結果 <span class="cnt" id="tabResultsCnt"></span></button>
   <button class="tab-btn" data-tab="agencies" id="tabAgencies">🏢 検査機関 <span class="cnt" id="tabAgenciesCnt"></span></button>
-  <button class="tab-btn" data-tab="flow" id="tabFlow">📖 検査の流れ</button>
+  <button class="tab-btn" data-tab="flow" id="tabFlow">📖 検査の基本的な流れ</button>
 </div>
 
 <!-- ============ Toolbar: results ============ -->
@@ -549,7 +549,6 @@ body {
   <div id="agencyTableWrap" style="display:none"></div>
   <div id="flowPanel" style="display:none">
     <div class="flow-panel-bar">
-      <div class="flow-panel-title">📖 検査の基本の流れ</div>
       <div class="flow-panel-actions" id="flowViewActions">
         <button class="btn-add" id="btnFlowEdit">✏️ 編集</button>
       </div>
@@ -767,13 +766,13 @@ body {
 'use strict';
 
 /* ======================================================================
-   検査結果保存くん — v1.6.0
+   検査結果保存くん — v1.6.1
    データ保存: GitHub (Contents API)
      - データ:   kensa-data/records.json  { version, records[], agencies[] }
      - 画像:     kensa-data/images/{recordId}/{filename}
    ====================================================================== */
 
-const APP_VERSION = 'v1.6.0';
+const APP_VERSION = 'v1.6.1';
 const LS_AUTH = 'kensa_auth';
 const DATA_PATH = 'kensa-data/records.json';
 
