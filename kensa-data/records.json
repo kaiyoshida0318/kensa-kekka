@@ -76,9 +76,20 @@
       "inspectedAt": "2024-11-28",
       "inspector": "遠藤",
       "note": "",
-      "images": [],
+      "images": [
+        {
+          "id": "img_1785404032865_99s9h8",
+          "filename": "1785404031010_u55o6v_yoga-24-01-b-01.jpg",
+          "originalName": "yoga-24-01-b-01.jpg",
+          "path": "kensa-data/images/rec_1785402746243_a2bv/1785404031010_u55o6v_yoga-24-01-b-01.jpg",
+          "sha": "c1d6e39ce0bca911b9cd7472e5dce4d3b4e1fdc2",
+          "url": "https://raw.githubusercontent.com/kaiyoshida0318/kensa-kekka/main/kensa-data/images/rec_1785402746243_a2bv/1785404031010_u55o6v_yoga-24-01-b-01.jpg",
+          "size": 148072,
+          "uploadedAt": "2026-07-30T09:33:52.866Z"
+        }
+      ],
       "createdAt": "2026-07-30T09:13:08.585Z",
-      "updatedAt": "2026-07-30T09:14:06.577Z"
+      "updatedAt": "2026-07-30T09:33:51.010Z"
     }
   ],
   "agencies": [
