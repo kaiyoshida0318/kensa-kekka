@@ -10,7 +10,7 @@
       "agencyName": "CRC食品環境衛生研究所",
       "categoryId": "cat_1785404938727_gmp0",
       "categoryName": "有害物質有無",
-      "content": "",
+      "content": "シリコン中のRoHS5元素有無",
       "cost": "5,500円",
       "inspectStart": "2026-07-28",
       "inspectEnd": "",
@@ -30,7 +30,7 @@
         }
       ],
       "createdAt": "2026-07-28T07:40:30.513Z",
-      "updatedAt": "2026-07-30T09:57:35.691Z"
+      "updatedAt": "2026-07-30T09:59:12.332Z"
     },
     {
       "id": "rec_1785402394577_3rm3",
