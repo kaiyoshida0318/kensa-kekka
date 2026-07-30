@@ -89,6 +89,14 @@
       "flowNote": "",
       "createdAt": "2026-07-29T02:55:18.614Z",
       "updatedAt": "2026-07-29T02:55:18.614Z"
+    },
+    {
+      "id": "ag_1785402839086_67p4",
+      "name": "QTEC",
+      "mainInspection": "繊維の有害物質、引張強さ",
+      "flowNote": "",
+      "createdAt": "2026-07-30T09:13:59.086Z",
+      "updatedAt": "2026-07-30T09:13:59.086Z"
     }
   ],
   "flow": "①どんな検査が良さそうかChatGPTに相談\n(本格的な検査を提案しがちだから最低限LPに載せられる検査を探してもらう)\nhttps://chatgpt.com/g/g-p-699d6049f8208191b61ff8bbd1d64e35/c/6a6851ad-f2a0-83ee-8e99-bae95851eb79"
