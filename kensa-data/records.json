@@ -62,6 +62,23 @@
       "images": [],
       "createdAt": "2026-07-30T09:11:15.360Z",
       "updatedAt": "2026-07-30T09:11:15.360Z"
+    },
+    {
+      "id": "rec_1785402746243_a2bv",
+      "itemName": "ヒップバンド",
+      "itemNumber": "yoga-24-01-band",
+      "result": "pass",
+      "agencyId": "",
+      "agencyName": "",
+      "cost": "2,750円",
+      "inspectStart": "2024-11-28",
+      "inspectEnd": "2024-12-05",
+      "inspectedAt": "2024-11-28",
+      "inspector": "遠藤",
+      "note": "",
+      "images": [],
+      "createdAt": "2026-07-30T09:13:08.585Z",
+      "updatedAt": "2026-07-30T09:13:08.585Z"
     }
   ],
   "agencies": [
