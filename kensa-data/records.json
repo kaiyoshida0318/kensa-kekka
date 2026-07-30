@@ -41,7 +41,7 @@
       "agencyName": "QTEC",
       "categoryId": "cat_1785404938727_gmp0",
       "categoryName": "有害物質有無",
-      "content": "ホルムアルデヒド、蛍光増白剤の有無",
+      "content": "ホルムアルデヒド、蛍光増白剤の含有有無",
       "cost": "4,290円",
       "inspectStart": "2024-07-30",
       "inspectEnd": "2024-09-02",
@@ -61,7 +61,7 @@
         }
       ],
       "createdAt": "2026-07-30T09:07:25.703Z",
-      "updatedAt": "2026-07-30T09:50:14.896Z"
+      "updatedAt": "2026-07-30T09:59:31.395Z"
     },
     {
       "id": "rec_1785402555634_v92b",
