@@ -45,6 +45,23 @@
       "images": [],
       "createdAt": "2026-07-30T09:07:25.703Z",
       "updatedAt": "2026-07-30T09:07:25.703Z"
+    },
+    {
+      "id": "rec_1785402555634_v92b",
+      "itemName": "ベビーソックス",
+      "itemNumber": "baby-24-01-sox",
+      "result": "pass",
+      "agencyId": "",
+      "agencyName": "",
+      "cost": "2,750円",
+      "inspectStart": "2024-11-28",
+      "inspectEnd": "2024-11-28",
+      "inspectedAt": "2024-11-28",
+      "inspector": "遠藤",
+      "note": "",
+      "images": [],
+      "createdAt": "2026-07-30T09:11:15.360Z",
+      "updatedAt": "2026-07-30T09:11:15.360Z"
     }
   ],
   "agencies": [
