@@ -8,6 +8,9 @@
       "result": "progress",
       "agencyId": "ag_1785293718614_xj45",
       "agencyName": "CRC食品環境衛生研究所",
+      "categoryId": "cat_1785404938727_gmp0",
+      "categoryName": "有害物質有無",
+      "content": "",
       "cost": "5,500円",
       "inspectStart": "2026-07-28",
       "inspectEnd": "",
@@ -27,7 +30,7 @@
         }
       ],
       "createdAt": "2026-07-28T07:40:30.513Z",
-      "updatedAt": "2026-07-30T09:37:07.148Z"
+      "updatedAt": "2026-07-30T09:57:35.691Z"
     },
     {
       "id": "rec_1785402394577_3rm3",
