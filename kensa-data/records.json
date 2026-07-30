@@ -42,9 +42,20 @@
       "inspectedAt": "2024-07-30",
       "inspector": "遠藤",
       "note": "",
-      "images": [],
+      "images": [
+        {
+          "id": "img_1785404164865_47uf4n",
+          "filename": "1785404163157_49m4vd_sc-b-01.webp",
+          "originalName": "sc-b-01.webp",
+          "path": "kensa-data/images/rec_1785402394577_3rm3/1785404163157_49m4vd_sc-b-01.webp",
+          "sha": "d550fc910d8d0e999d9fa1d2097eda179d83938e",
+          "url": "https://raw.githubusercontent.com/kaiyoshida0318/kensa-kekka/main/kensa-data/images/rec_1785402394577_3rm3/1785404163157_49m4vd_sc-b-01.webp",
+          "size": 73014,
+          "uploadedAt": "2026-07-30T09:36:04.866Z"
+        }
+      ],
       "createdAt": "2026-07-30T09:07:25.703Z",
-      "updatedAt": "2026-07-30T09:14:18.159Z"
+      "updatedAt": "2026-07-30T09:36:03.157Z"
     },
     {
       "id": "rec_1785402555634_v92b",
