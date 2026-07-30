@@ -51,8 +51,8 @@
       "itemName": "ベビーソックス",
       "itemNumber": "baby-24-01-sox",
       "result": "pass",
-      "agencyId": "",
-      "agencyName": "",
+      "agencyId": "ag_1785402839086_67p4",
+      "agencyName": "QTEC",
       "cost": "2,750円",
       "inspectStart": "2024-11-28",
       "inspectEnd": "2024-11-28",
@@ -61,7 +61,7 @@
       "note": "",
       "images": [],
       "createdAt": "2026-07-30T09:11:15.360Z",
-      "updatedAt": "2026-07-30T09:11:15.360Z"
+      "updatedAt": "2026-07-30T09:14:12.030Z"
     },
     {
       "id": "rec_1785402746243_a2bv",
