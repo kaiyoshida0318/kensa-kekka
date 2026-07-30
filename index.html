@@ -198,6 +198,21 @@ body {
 .seg button.active[data-result="fail"] { background: var(--fail); }
 .seg button.active[data-result="progress"] { background: var(--progress); }
 
+/* toolbar filter (検査費用) */
+.filter-group { display: flex; align-items: center; gap: 6px; }
+.filter-label { font-size: 12px; color: var(--text-light); white-space: nowrap; }
+.filter-select { padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); font-size: 13px; color: var(--text); max-width: 200px; cursor: pointer; }
+
+/* 検査分類 inline add (編集フォーム) */
+.cat-select-wrap { display: flex; gap: 6px; align-items: center; }
+.cat-select-wrap select { flex: 1; min-width: 0; }
+.btn-cat-add { white-space: nowrap; padding: 8px 10px; font-size: 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); cursor: pointer; }
+.btn-cat-add:hover { background: var(--bg); }
+.cat-add-inline { display: flex; gap: 6px; align-items: center; margin-top: 6px; }
+.cat-add-inline input { flex: 1; min-width: 0; }
+.btn-cat-confirm { white-space: nowrap; padding: 8px 12px; font-size: 12px; border: none; border-radius: 8px; background: var(--primary); color: #fff; cursor: pointer; }
+.btn-cat-cancel { padding: 6px 10px; font-size: 14px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text-light); cursor: pointer; line-height: 1; }
+
 .toolbar-spacer { flex: 1; }
 .result-count { font-size: 12px; color: var(--text-light); white-space: nowrap; }
 .btn-add {
@@ -502,7 +517,7 @@ body {
   <div class="header-spacer"></div>
   <div class="header-actions">
     <span class="conn-pill off" id="connPill">未接続</span>
-    <span class="app-version" id="appVersion">v1.6.1</span>
+    <span class="app-version" id="appVersion">v1.7.1</span>
     <button class="btn-icon" id="btnReload" title="GitHubから再読み込み">🔄 更新</button>
     <button class="btn-icon" id="btnSettings" title="設定">⚙️ 設定</button>
   </div>
@@ -526,6 +541,10 @@ body {
     <button data-result="pass">✅ 合格</button>
     <button data-result="fail">❌ 不合格</button>
     <button data-result="progress">⏳ 検査中</button>
+  </div>
+  <div class="filter-group">
+    <label class="filter-label">検査分類</label>
+    <select id="categoryFilter" class="filter-select"><option value="all">すべて</option></select>
   </div>
   <div class="toolbar-spacer"></div>
   <span class="result-count" id="resultCount"></span>
@@ -612,13 +631,32 @@ body {
           <small class="form-hint">「検査機関」タブで登録した機関から選べます</small>
         </div>
         <div class="form-row">
-          <label>検査費用</label>
-          <input type="text" id="fCost" placeholder="例: 12,000円 / 税抜10,000">
+          <label>検査分類</label>
+          <div class="cat-select-wrap">
+            <select id="fCategory"><option value="">（未選択）</option></select>
+            <button type="button" class="btn-cat-add" id="btnAddCategory">＋ 新規</button>
+          </div>
+          <div class="cat-add-inline" id="catAddInline" style="display:none">
+            <input type="text" id="fNewCategory" placeholder="新しい検査分類名">
+            <button type="button" class="btn-cat-confirm" id="btnConfirmCategory">追加</button>
+            <button type="button" class="btn-cat-cancel" id="btnCancelCategory" title="キャンセル">×</button>
+          </div>
+          <small class="form-hint">選択肢にない分類は「＋ 新規」で追加できます</small>
         </div>
       </div>
       <div class="form-row">
-        <label>検査者</label>
-        <input type="text" id="fInspector" placeholder="例: 山田">
+        <label>検査内容</label>
+        <input type="text" id="fContent" placeholder="例: 耐久試験・成分分析 など">
+      </div>
+      <div class="form-2col">
+        <div class="form-row">
+          <label>検査費用</label>
+          <input type="text" id="fCost" placeholder="例: 12,000円 / 税抜10,000">
+        </div>
+        <div class="form-row">
+          <label>検査者</label>
+          <input type="text" id="fInspector" placeholder="例: 山田">
+        </div>
       </div>
       <div class="form-row">
         <label>メモ・備考</label>
@@ -766,21 +804,22 @@ body {
 'use strict';
 
 /* ======================================================================
-   検査結果保存くん — v1.6.1
+   検査結果保存くん — v1.7.1
    データ保存: GitHub (Contents API)
      - データ:   kensa-data/records.json  { version, records[], agencies[] }
      - 画像:     kensa-data/images/{recordId}/{filename}
    ====================================================================== */
 
-const APP_VERSION = 'v1.6.1';
+const APP_VERSION = 'v1.7.1';
 const LS_AUTH = 'kensa_auth';
 const DATA_PATH = 'kensa-data/records.json';
 
 // ----- state -----
 let auth = { pat: '', owner: '', repo: '', branch: 'main' };
-let state = { records: [], agencies: [], flow: '', sha: null, _loadFailed: false, _wasEmpty: false };
+let state = { records: [], agencies: [], categories: [], flow: '', sha: null, _loadFailed: false, _wasEmpty: false };
 let currentTab = 'results';
 let filterResult = 'all';
+let filterCategory = 'all';
 let searchText = '';
 let agencySearchText = '';
 
@@ -852,6 +891,7 @@ async function loadRecords() {
     return {
       records: Array.isArray(json.records) ? json.records : [],
       agencies: Array.isArray(json.agencies) ? json.agencies : [],
+      categories: Array.isArray(json.categories) ? json.categories : [],
       flow: typeof json.flow === 'string' ? json.flow : '',
       sha: data.sha
     };
@@ -866,7 +906,7 @@ async function saveData(message, retryCount = 0) {
   if (state._loadFailed || state._wasEmpty) {
     throw new Error('データの読み込みに失敗しているため、上書き保存を中止しました。「🔄更新」で再読み込みしてください。');
   }
-  const content = JSON.stringify({ version: APP_VERSION, records: state.records, agencies: state.agencies, flow: state.flow || '' }, null, 2);
+  const content = JSON.stringify({ version: APP_VERSION, records: state.records, agencies: state.agencies, categories: state.categories || [], flow: state.flow || '' }, null, 2);
   const body = { message: message || 'update data', content: b64encode(content), branch: auth.branch };
   if (state.sha) body.sha = state.sha;
   const res = await ghFetch(`contents/${DATA_PATH}`, { method: 'PUT', body: JSON.stringify(body) });
@@ -983,6 +1023,26 @@ function agencyNameOf(r) {
   }
   return r.agencyName || '';
 }
+function categoryNameOf(r) {
+  if (r.categoryId) {
+    const c = (state.categories || []).find(x => x.id === r.categoryId);
+    if (c) return c.name;
+  }
+  return r.categoryName || '';
+}
+function populateCategoryFilter() {
+  const sel = document.getElementById('categoryFilter');
+  if (!sel) return;
+  // 記録に実際に使われている分類 + 登録済みの分類名を集約
+  const used = state.records.map(r => categoryNameOf(r)).map(s => (s || '').trim()).filter(Boolean);
+  const registered = (state.categories || []).map(c => (c.name || '').trim()).filter(Boolean);
+  const names = [...new Set([...used, ...registered])].sort((a, b) => a.localeCompare(b, 'ja'));
+  if (filterCategory !== 'all' && !names.includes(filterCategory)) filterCategory = 'all';
+  sel.innerHTML = ['<option value="all">すべて</option>']
+    .concat(names.map(n => `<option value="${escAttr(n)}">${esc(n)}</option>`))
+    .join('');
+  sel.value = filterCategory;
+}
 function resultLabel(result) {
   if (result === 'fail') return '不合格';
   if (result === 'progress') return '検査中';
@@ -1069,12 +1129,15 @@ function filteredRecords() {
   const q = searchText.trim().toLowerCase();
   let list = state.records.slice();
   if (filterResult !== 'all') list = list.filter(r => (r.result || 'pass') === filterResult);
+  if (filterCategory !== 'all') list = list.filter(r => (categoryNameOf(r) || '').trim() === filterCategory);
   if (q) {
     list = list.filter(r =>
       (r.itemName || '').toLowerCase().includes(q) ||
       (r.itemNumber || '').toLowerCase().includes(q) ||
       (r.inspector || '').toLowerCase().includes(q) ||
       (agencyNameOf(r) || '').toLowerCase().includes(q) ||
+      (categoryNameOf(r) || '').toLowerCase().includes(q) ||
+      (r.content || '').toLowerCase().includes(q) ||
       (r.note || '').toLowerCase().includes(q)
     );
   }
@@ -1091,6 +1154,7 @@ function renderResults() {
   const empty = document.getElementById('emptyState');
   const agWrap = document.getElementById('agencyTableWrap');
   agWrap.style.display = 'none';
+  populateCategoryFilter();
   const list = filteredRecords();
 
   document.getElementById('resultCount').textContent = `${list.length} / ${state.records.length} 件`;
@@ -1241,6 +1305,8 @@ function openDetail(id) {
     <div class="detail-row"><span class="k">商品名</span><span class="v">${esc(r.itemName || '—')}</span></div>
     <div class="detail-row"><span class="k">商品番号</span><span class="v" style="font-family:ui-monospace,monospace">${esc(r.itemNumber || '—')}</span></div>
     <div class="detail-row"><span class="k">検査機関</span><span class="v">${agencyCell}</span></div>
+    <div class="detail-row"><span class="k">検査分類</span><span class="v">${esc(categoryNameOf(r) || '—')}</span></div>
+    <div class="detail-row"><span class="k">検査内容</span><span class="v" style="white-space:pre-wrap">${esc(r.content || '—')}</span></div>
     <div class="detail-row"><span class="k">検査費用</span><span class="v">${esc(r.cost || '—')}</span></div>
     <div class="detail-row"><span class="k">検査者</span><span class="v">${esc(r.inspector || '—')}</span></div>
     <div class="detail-row"><span class="k">メモ</span><span class="v" style="white-space:pre-wrap">${esc(r.note || '—')}</span></div>
@@ -1263,6 +1329,37 @@ function populateAgencySelect(selectedId) {
   sel.value = selectedId || '';
 }
 
+function populateCategorySelect(selectedId) {
+  const sel = document.getElementById('fCategory');
+  const sorted = (state.categories || []).slice().sort((a, b) => (a.name || '').localeCompare(b.name || '', 'ja'));
+  sel.innerHTML = ['<option value="">（未選択）</option>']
+    .concat(sorted.map(c => `<option value="${escAttr(c.id)}">${esc(c.name || '(名称なし)')}</option>`))
+    .join('');
+  sel.value = selectedId || '';
+}
+
+function showCatAdd(on) {
+  document.getElementById('catAddInline').style.display = on ? 'flex' : 'none';
+  document.getElementById('btnAddCategory').style.display = on ? 'none' : 'inline-block';
+  if (on) { const i = document.getElementById('fNewCategory'); i.value = ''; i.focus(); }
+}
+
+function confirmAddCategory() {
+  const name = document.getElementById('fNewCategory').value.trim();
+  if (!name) { toast('検査分類名を入力してください', 'error'); return; }
+  let c = (state.categories || []).find(x => (x.name || '').trim() === name);
+  if (!c) {
+    c = { id: 'cat_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6), name };
+    if (!Array.isArray(state.categories)) state.categories = [];
+    state.categories.push(c);
+    toast(`検査分類「${name}」を追加しました（検査結果を保存するとGitHubにも記録されます）`, 'success');
+  } else {
+    toast('同じ名前の検査分類が既にあります', 'error');
+  }
+  populateCategorySelect(c.id);
+  showCatAdd(false);
+}
+
 function openEdit(id) {
   const isNew = !id;
   edit = { id: id || ('rec_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6)),
@@ -1279,8 +1376,11 @@ function openEdit(id) {
     document.getElementById('fEnd').value = '';
     document.getElementById('fInspector').value = '';
     document.getElementById('fCost').value = '';
+    document.getElementById('fContent').value = '';
     document.getElementById('fNote').value = '';
     populateAgencySelect('');
+    populateCategorySelect('');
+    showCatAdd(false);
   } else {
     const r = state.records.find(x => x.id === id) || {};
     document.getElementById('fName').value = r.itemName || '';
@@ -1291,8 +1391,11 @@ function openEdit(id) {
     document.getElementById('fEnd').value = (r.inspectEnd || '').slice(0, 10);
     document.getElementById('fInspector').value = r.inspector || '';
     document.getElementById('fCost').value = r.cost || '';
+    document.getElementById('fContent').value = r.content || '';
     document.getElementById('fNote').value = r.note || '';
     populateAgencySelect(r.agencyId || '');
+    populateCategorySelect(r.categoryId || '');
+    showCatAdd(false);
     edit.existingImages = (r.images || []).map(im => ({ ...im }));
   }
   renderEditImages();
@@ -1347,6 +1450,8 @@ async function handleSaveRecord() {
   if (start && end && end < start) { toast('検査期間の終了日は開始日以降にしてください', 'error'); return; }
   const agencyId = document.getElementById('fAgency').value;
   const ag = state.agencies.find(x => x.id === agencyId);
+  const categoryId = document.getElementById('fCategory').value;
+  const cat = (state.categories || []).find(x => x.id === categoryId);
   const rec = {
     id: edit.id,
     itemName: name,
@@ -1354,6 +1459,9 @@ async function handleSaveRecord() {
     result,
     agencyId: agencyId || '',
     agencyName: ag ? ag.name : '',
+    categoryId: categoryId || '',
+    categoryName: cat ? cat.name : '',
+    content: document.getElementById('fContent').value.trim(),
     cost: document.getElementById('fCost').value.trim(),
     inspectStart: start,
     inspectEnd: end,
@@ -1508,7 +1616,7 @@ async function reloadFromGitHub() {
   try {
     const loaded = await loadRecords();
     state = {
-      records: loaded.records, agencies: loaded.agencies || [], flow: loaded.flow || '', sha: loaded.sha,
+      records: loaded.records, agencies: loaded.agencies || [], categories: loaded.categories || [], flow: loaded.flow || '', sha: loaded.sha,
       _loadFailed: !!loaded._loadFailed, _wasEmpty: !!loaded._wasEmpty
     };
     render();
@@ -1614,6 +1722,15 @@ function init() {
   document.getElementById('searchInput').addEventListener('input', e => { searchText = e.target.value; render(); });
   document.getElementById('agencySearch').addEventListener('input', e => { agencySearchText = e.target.value; render(); });
   document.querySelectorAll('#resultFilter button').forEach(b => { b.onclick = () => setFilter(b.dataset.result); });
+  document.getElementById('categoryFilter').addEventListener('change', e => { filterCategory = e.target.value; if (currentTab === 'results') render(); });
+
+  // 検査分類の新規追加(編集フォーム内)
+  document.getElementById('btnAddCategory').onclick = () => showCatAdd(true);
+  document.getElementById('btnCancelCategory').onclick = () => showCatAdd(false);
+  document.getElementById('btnConfirmCategory').onclick = confirmAddCategory;
+  document.getElementById('fNewCategory').addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); confirmAddCategory(); }
+  });
 
   // image dropzone
   const dz = document.getElementById('imgDropzone');
