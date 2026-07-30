@@ -28,6 +28,23 @@
       ],
       "createdAt": "2026-07-28T07:40:30.513Z",
       "updatedAt": "2026-07-30T07:33:52.476Z"
+    },
+    {
+      "id": "rec_1785402394577_3rm3",
+      "itemName": "リトミックスカーフ",
+      "itemNumber": "scarf-24-01",
+      "result": "pass",
+      "agencyId": "",
+      "agencyName": "",
+      "cost": "4,290円",
+      "inspectStart": "2024-07-30",
+      "inspectEnd": "2024-09-02",
+      "inspectedAt": "2024-07-30",
+      "inspector": "遠藤",
+      "note": "",
+      "images": [],
+      "createdAt": "2026-07-30T09:07:25.703Z",
+      "updatedAt": "2026-07-30T09:07:25.703Z"
     }
   ],
   "agencies": [
