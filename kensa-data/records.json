@@ -68,8 +68,8 @@
       "itemName": "ヒップバンド",
       "itemNumber": "yoga-24-01-band",
       "result": "pass",
-      "agencyId": "",
-      "agencyName": "",
+      "agencyId": "ag_1785402839086_67p4",
+      "agencyName": "QTEC",
       "cost": "2,750円",
       "inspectStart": "2024-11-28",
       "inspectEnd": "2024-12-05",
@@ -78,7 +78,7 @@
       "note": "",
       "images": [],
       "createdAt": "2026-07-30T09:13:08.585Z",
-      "updatedAt": "2026-07-30T09:13:08.585Z"
+      "updatedAt": "2026-07-30T09:14:06.577Z"
     }
   ],
   "agencies": [
