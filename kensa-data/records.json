@@ -102,7 +102,7 @@
       "agencyId": "ag_1785402839086_67p4",
       "agencyName": "QTEC",
       "categoryId": "cat_1785459257347_hjwb",
-      "categoryName": "物性検査",
+      "categoryName": "物性",
       "content": "引張強さ",
       "cost": "2,750円",
       "inspectStart": "2024-11-28",
@@ -151,7 +151,7 @@
     },
     {
       "id": "cat_1785459257347_hjwb",
-      "name": "物性検査"
+      "name": "物性"
     }
   ],
   "flow": "①どんな検査が良さそうかChatGPTに相談\n(本格的な検査を提案しがちだから最低限LPに載せられる検査を探してもらう)\nhttps://chatgpt.com/g/g-p-699d6049f8208191b61ff8bbd1d64e35/c/6a6851ad-f2a0-83ee-8e99-bae95851eb79"
