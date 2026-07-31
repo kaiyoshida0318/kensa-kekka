@@ -181,10 +181,21 @@
           "size": 388773,
           "mime": "application/pdf",
           "uploadedAt": "2026-07-31T08:17:58.780Z"
+        },
+        "report": {
+          "id": "doc_1785485913884_s13orz",
+          "filename": "1785485912106_ilsuzf_____________.pdf",
+          "originalName": "【試験結果】ヒップバンド.pdf",
+          "path": "kensa-data/files/rec_1785402746243_a2bv/report/1785485912106_ilsuzf_____________.pdf",
+          "sha": "1fe1f441b71910e9134ca9b49f45d98c3d028382",
+          "url": "https://raw.githubusercontent.com/kaiyoshida0318/kensa-kekka/main/kensa-data/files/rec_1785402746243_a2bv/report/1785485912106_ilsuzf_____________.pdf",
+          "size": 142163,
+          "mime": "application/pdf",
+          "uploadedAt": "2026-07-31T08:18:33.884Z"
         }
       },
       "createdAt": "2026-07-30T09:13:08.585Z",
-      "updatedAt": "2026-07-31T08:17:55.086Z"
+      "updatedAt": "2026-07-31T08:18:32.105Z"
     }
   ],
   "agencies": [
