@@ -58,10 +58,20 @@
           "url": "https://raw.githubusercontent.com/kaiyoshida0318/kensa-kekka/main/kensa-data/images/rec_1785402394577_3rm3/1785404163157_49m4vd_sc-b-01.webp",
           "size": 73014,
           "uploadedAt": "2026-07-30T09:36:04.866Z"
+        },
+        {
+          "id": "img_1785459660435_r24h0p",
+          "filename": "1785459658065_0wot15_01.png",
+          "originalName": "01.png",
+          "path": "kensa-data/images/rec_1785402394577_3rm3/1785459658065_0wot15_01.png",
+          "sha": "32f10de148cf2f076c53496c37a95837e5a83235",
+          "url": "https://raw.githubusercontent.com/kaiyoshida0318/kensa-kekka/main/kensa-data/images/rec_1785402394577_3rm3/1785459658065_0wot15_01.png",
+          "size": 895444,
+          "uploadedAt": "2026-07-31T01:01:00.436Z"
         }
       ],
       "createdAt": "2026-07-30T09:07:25.703Z",
-      "updatedAt": "2026-07-30T09:59:31.395Z"
+      "updatedAt": "2026-07-31T01:00:58.064Z"
     },
     {
       "id": "rec_1785402555634_v92b",
