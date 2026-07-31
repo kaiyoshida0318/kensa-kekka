@@ -9,7 +9,7 @@
       "agencyId": "ag_1785293718614_xj45",
       "agencyName": "CRC食品環境衛生研究所",
       "categoryId": "cat_1785404938727_gmp0",
-      "categoryName": "有害物質含有有無",
+      "categoryName": "有害物質",
       "content": "シリコン中のRoHS5元素含有有無",
       "cost": "5,500円",
       "inspectStart": "2026-07-28",
@@ -40,7 +40,7 @@
       "agencyId": "ag_1785402839086_67p4",
       "agencyName": "QTEC",
       "categoryId": "cat_1785404938727_gmp0",
-      "categoryName": "有害物質含有有無",
+      "categoryName": "有害物質",
       "content": "ホルムアルデヒド、蛍光増白剤の含有有無",
       "cost": "4,290円",
       "inspectStart": "2024-07-30",
@@ -71,7 +71,7 @@
       "agencyId": "ag_1785402839086_67p4",
       "agencyName": "QTEC",
       "categoryId": "cat_1785404938727_gmp0",
-      "categoryName": "有害物質含有有無",
+      "categoryName": "有害物質",
       "content": "ホルムアルデヒド、蛍光増白剤の有無",
       "cost": "2,750円",
       "inspectStart": "2024-11-28",
@@ -147,7 +147,7 @@
   "categories": [
     {
       "id": "cat_1785404938727_gmp0",
-      "name": "有害物質含有有無"
+      "name": "有害物質"
     },
     {
       "id": "cat_1785459257347_hjwb",
