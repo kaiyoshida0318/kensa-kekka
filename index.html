@@ -559,7 +559,7 @@ body {
   <div class="header-spacer"></div>
   <div class="header-actions">
     <span class="conn-pill off" id="connPill">未接続</span>
-    <span class="app-version" id="appVersion">v1.9.1</span>
+    <span class="app-version" id="appVersion">v1.9.2</span>
     <button class="btn-icon" id="btnReload" title="GitHubから再読み込み">🔄 更新</button>
     <button class="btn-icon" id="btnSettings" title="設定">⚙️ 設定</button>
   </div>
@@ -634,7 +634,7 @@ body {
   <div class="modal modal-lg">
     <div class="modal-header">
       <h2 id="editTitle">検査結果を追加</h2>
-      <button class="btn-close" onclick="closeModal('editModal')">×</button>
+      <button class="btn-close" onclick="closeEditModal()">×</button>
     </div>
     <div class="modal-body">
       <input type="hidden" id="editId">
@@ -722,7 +722,7 @@ body {
       </div>
       <div class="modal-actions">
         <button class="btn-danger" id="btnDeleteRecord" style="margin-right:auto;display:none">🗑️ この検査結果を削除</button>
-        <button class="btn-secondary" onclick="closeModal('editModal')">キャンセル</button>
+        <button class="btn-secondary" onclick="closeEditModal()">キャンセル</button>
         <button class="btn-primary" id="btnSaveRecord">保存</button>
       </div>
     </div>
@@ -778,7 +778,7 @@ body {
   <div class="modal">
     <div class="modal-header">
       <h2 id="agencyModalTitle">検査機関を追加</h2>
-      <button class="btn-close" onclick="closeModal('agencyModal')">×</button>
+      <button class="btn-close" onclick="closeAgencyModal()">×</button>
     </div>
     <div class="modal-body">
       <input type="hidden" id="agId">
@@ -796,7 +796,7 @@ body {
       </div>
       <div class="modal-actions">
         <button class="btn-danger" id="btnDeleteAgency" style="margin-right:auto;display:none">🗑️ この機関を削除</button>
-        <button class="btn-secondary" onclick="closeModal('agencyModal')">キャンセル</button>
+        <button class="btn-secondary" onclick="closeAgencyModal()">キャンセル</button>
         <button class="btn-primary" id="btnSaveAgency">保存</button>
       </div>
     </div>
@@ -877,14 +877,14 @@ body {
 'use strict';
 
 /* ======================================================================
-   検査結果保存くん — v1.9.1
+   検査結果保存くん — v1.9.2
    データ保存: GitHub (Contents API)
      - データ:   kensa-data/records.json  { version, records[], agencies[], categories[], flow }
      - 画像:     kensa-data/images/{recordId}/{filename}      (サムネイル1枚)
      - 書類:     kensa-data/files/{recordId}/{slot}/{filename} (4種)
    ====================================================================== */
 
-const APP_VERSION = 'v1.9.1';
+const APP_VERSION = 'v1.9.2';
 const LS_AUTH = 'kensa_auth';
 const DATA_PATH = 'kensa-data/records.json';
 
@@ -1759,6 +1759,14 @@ function clearDocSlot(slotKey) {
   renderDocSlots();
 }
 
+// 編集を閉じる: 既存レコードなら詳細へ戻る / 新規なら閉じるだけ
+function closeEditModal() {
+  const exists = state.records.some(x => x.id === edit.id);
+  edit.pendingFiles.forEach(pf => pf._preview && URL.revokeObjectURL(pf._preview));
+  closeModal('editModal');
+  if (exists) openDetail(edit.id);
+}
+
 function imageCount() { return edit.existingImages.length + edit.pendingFiles.length; }
 
 function renderEditImages() {
@@ -1866,19 +1874,12 @@ async function handleSaveRecord() {
     showLoading(true, 'データ保存中...');
     await saveData(`save record: ${rec.itemName || rec.itemNumber || rec.id}`);
 
-    // 保存後もモーダルは開いたまま。作業用stateを保存済みの内容に同期して、
-    // 続けて「保存」を押しても二重アップロードにならないようにする。
     edit.pendingFiles.forEach(pf => pf._preview && URL.revokeObjectURL(pf._preview));
     edit.pendingFiles = [];
     edit.pendingDocs = {}; edit.removedDocs = []; edit.removedImages = [];
-    edit.existingImages = (rec.images || []).map(im => ({ ...im }));
-    edit.docs = {};
-    DOC_SLOTS.forEach(s => { if (rec.docs[s.key]) edit.docs[s.key] = { ...rec.docs[s.key] }; });
-    document.getElementById('editTitle').textContent = '検査結果を編集';
-    document.getElementById('btnDeleteRecord').style.display = 'inline-block';
-    renderEditImages();
-    renderDocSlots();
+    closeModal('editModal');
     render();
+    openDetail(rec.id); // 保存後は詳細へ
     toast('保存しました', 'success');
   } catch (e) {
     console.error(e);
@@ -1929,6 +1930,14 @@ function openAgencyDetail(id) {
   showModal('agencyDetailModal');
 }
 
+// 検査機関の編集を閉じる: 既存なら詳細へ戻る / 新規なら閉じるだけ
+function closeAgencyModal() {
+  const id = document.getElementById('agId').value;
+  const exists = id && state.agencies.some(x => x.id === id);
+  closeModal('agencyModal');
+  if (exists) openAgencyDetail(id);
+}
+
 function openAgencyEdit(id) {
   const isNew = !id;
   const a = isNew ? {} : (state.agencies.find(x => x.id === id) || {});
@@ -1964,6 +1973,7 @@ async function handleSaveAgency() {
     await saveData(`save agency: ${name}`);
     closeModal('agencyModal');
     render();
+    openAgencyDetail(id); // 保存後は詳細へ
     toast('保存しました', 'success');
   } catch (e) {
     console.error(e);
@@ -2057,6 +2067,12 @@ async function handleFlowSave() {
 /* ==================== UI helpers ==================== */
 function showModal(id) { document.getElementById(id).style.display = 'flex'; }
 function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+// Esc / 背景ダブルクリック用: 編集モーダルは詳細へ戻す
+function closeModalById(id) {
+  if (id === 'editModal') return closeEditModal();
+  if (id === 'agencyModal') return closeAgencyModal();
+  closeModal(id);
+}
 function goHome() {
   setTab('results');
   searchText = ''; document.getElementById('searchInput').value = '';
@@ -2145,13 +2161,13 @@ function init() {
     // 最前面のモーダルだけ閉じる (重なり順を考慮)
     const order = ['categoryManageModal', 'agencyModal', 'settingsModal', 'editModal', 'agencyDetailModal', 'detailModal'];
     for (const id of order) {
-      if (document.getElementById(id).style.display === 'flex') { closeModal(id); break; }
+      if (document.getElementById(id).style.display === 'flex') { closeModalById(id); break; }
     }
   });
-  // backdrop クリックで閉じる
+  // backdrop は「ダブルクリック」で閉じる (誤操作防止)
   ['editModal', 'detailModal', 'agencyDetailModal', 'agencyModal', 'settingsModal', 'categoryManageModal'].forEach(id => {
     const el = document.getElementById(id);
-    el.addEventListener('click', e => { if (e.target === el) closeModal(id); });
+    el.addEventListener('dblclick', e => { if (e.target === el) closeModalById(id); });
   });
 
   render();
@@ -2167,6 +2183,8 @@ window.openAgencyEdit = openAgencyEdit;
 window.openAgencyDetail = openAgencyDetail;
 window.jumpToResult = jumpToResult;
 window.closeModal = closeModal;
+window.closeEditModal = closeEditModal;
+window.closeAgencyModal = closeAgencyModal;
 window.openLightbox = openLightbox;
 window.closeLightbox = closeLightbox;
 window.removeExistingImage = removeExistingImage;
