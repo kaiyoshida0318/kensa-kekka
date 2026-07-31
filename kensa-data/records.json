@@ -128,8 +128,32 @@
           "uploadedAt": "2026-07-30T09:35:03.807Z"
         }
       ],
+      "docs": {
+        "application": {
+          "id": "doc_1785486203460_x2kzf1",
+          "filename": "1785486201838_ifcu2g________________.xlsx",
+          "originalName": "【試験応募書類】ベビーソックス.xlsx",
+          "path": "kensa-data/files/rec_1785402555634_v92b/application/1785486201838_ifcu2g________________.xlsx",
+          "sha": "fe2b7eda64f422774d5e15e86ba5f881e905b9ec",
+          "url": "https://raw.githubusercontent.com/kaiyoshida0318/kensa-kekka/main/kensa-data/files/rec_1785402555634_v92b/application/1785486201838_ifcu2g________________.xlsx",
+          "size": 71926,
+          "mime": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+          "uploadedAt": "2026-07-31T08:23:23.460Z"
+        },
+        "report": {
+          "id": "doc_1785486205323_0hu10m",
+          "filename": "1785486203460_ie5wgd______________.pdf",
+          "originalName": "【試験結果】ベビーソックス.pdf",
+          "path": "kensa-data/files/rec_1785402555634_v92b/report/1785486203460_ie5wgd______________.pdf",
+          "sha": "795185279cfe5d6b4b541431c2fc66e5ec870f4f",
+          "url": "https://raw.githubusercontent.com/kaiyoshida0318/kensa-kekka/main/kensa-data/files/rec_1785402555634_v92b/report/1785486203460_ie5wgd______________.pdf",
+          "size": 304244,
+          "mime": "application/pdf",
+          "uploadedAt": "2026-07-31T08:23:25.323Z"
+        }
+      },
       "createdAt": "2026-07-30T09:11:15.360Z",
-      "updatedAt": "2026-07-30T09:57:25.036Z"
+      "updatedAt": "2026-07-31T08:23:21.837Z"
     },
     {
       "id": "rec_1785402746243_a2bv",
