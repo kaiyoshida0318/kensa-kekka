@@ -71,10 +71,21 @@
           "size": 72524,
           "mime": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
           "uploadedAt": "2026-07-31T01:29:26.206Z"
+        },
+        "report": {
+          "id": "doc_1785461453815_mn920l",
+          "filename": "1785461451931_3x9cq7________________.pdf",
+          "originalName": "【検査結果】リトミックスカーフ.pdf",
+          "path": "kensa-data/files/rec_1785402394577_3rm3/report/1785461451931_3x9cq7________________.pdf",
+          "sha": "a3023090f056bf6d379b8ccca3d3a4e1b1482285",
+          "url": "https://raw.githubusercontent.com/kaiyoshida0318/kensa-kekka/main/kensa-data/files/rec_1785402394577_3rm3/report/1785461451931_3x9cq7________________.pdf",
+          "size": 299853,
+          "mime": "application/pdf",
+          "uploadedAt": "2026-07-31T01:30:53.815Z"
         }
       },
       "createdAt": "2026-07-30T09:07:25.703Z",
-      "updatedAt": "2026-07-31T01:29:24.518Z"
+      "updatedAt": "2026-07-31T01:30:51.931Z"
     },
     {
       "id": "rec_1785402555634_v92b",
