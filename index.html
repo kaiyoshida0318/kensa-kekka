@@ -559,7 +559,7 @@ body {
   <div class="header-spacer"></div>
   <div class="header-actions">
     <span class="conn-pill off" id="connPill">未接続</span>
-    <span class="app-version" id="appVersion">v1.9.0</span>
+    <span class="app-version" id="appVersion">v1.9.1</span>
     <button class="btn-icon" id="btnReload" title="GitHubから再読み込み">🔄 更新</button>
     <button class="btn-icon" id="btnSettings" title="設定">⚙️ 設定</button>
   </div>
@@ -638,6 +638,16 @@ body {
     </div>
     <div class="modal-body">
       <input type="hidden" id="editId">
+      <div class="form-row">
+        <label>サムネイル画像（1枚）</label>
+        <div class="img-dropzone" id="imgDropzone">
+          <div class="img-dropzone-icon">📥</div>
+          <div class="img-dropzone-text">画像をドラッグ＆ドロップ、またはクリックして選択</div>
+          <div class="img-dropzone-hint">JPG / PNG / WebP / GIF ・ 1枚のみ</div>
+          <input type="file" id="fImages" accept="image/*" style="display:none">
+        </div>
+        <div class="img-grid" id="imgGrid"></div>
+      </div>
       <div class="form-2col">
         <div class="form-row">
           <label>検査期間</label>
@@ -704,16 +714,6 @@ body {
       <div class="form-row">
         <label>メモ・備考</label>
         <textarea id="fNote" placeholder="不具合内容、注意点、確認事項など"></textarea>
-      </div>
-      <div class="form-row">
-        <label>サムネイル画像（1枚）</label>
-        <div class="img-dropzone" id="imgDropzone">
-          <div class="img-dropzone-icon">📥</div>
-          <div class="img-dropzone-text">画像をドラッグ＆ドロップ、またはクリックして選択</div>
-          <div class="img-dropzone-hint">JPG / PNG / WebP / GIF ・ 1枚のみ（既にある場合は差し替え）</div>
-          <input type="file" id="fImages" accept="image/*" style="display:none">
-        </div>
-        <div class="img-grid" id="imgGrid"></div>
       </div>
       <div class="form-row">
         <label>関連書類</label>
@@ -877,14 +877,14 @@ body {
 'use strict';
 
 /* ======================================================================
-   検査結果保存くん — v1.9.0
+   検査結果保存くん — v1.9.1
    データ保存: GitHub (Contents API)
      - データ:   kensa-data/records.json  { version, records[], agencies[], categories[], flow }
      - 画像:     kensa-data/images/{recordId}/{filename}      (サムネイル1枚)
      - 書類:     kensa-data/files/{recordId}/{slot}/{filename} (4種)
    ====================================================================== */
 
-const APP_VERSION = 'v1.9.0';
+const APP_VERSION = 'v1.9.1';
 const LS_AUTH = 'kensa_auth';
 const DATA_PATH = 'kensa-data/records.json';
 
@@ -1759,8 +1759,12 @@ function clearDocSlot(slotKey) {
   renderDocSlots();
 }
 
+function imageCount() { return edit.existingImages.length + edit.pendingFiles.length; }
+
 function renderEditImages() {
   const grid = document.getElementById('imgGrid');
+  // 画像が1枚あるときはドロップエリアを隠す
+  document.getElementById('imgDropzone').style.display = imageCount() >= 1 ? 'none' : '';
   const existing = edit.existingImages.map((im, i) => `
     <div class="img-card">
       <img class="thumb" src="${escAttr(im.url)}" alt="" onclick="openLightbox('${escAttr(im.url)}')">
@@ -1785,19 +1789,17 @@ function removePendingImage(i) {
   if (pf && pf._preview) URL.revokeObjectURL(pf._preview);
   renderEditImages();
 }
-// サムネイル画像は1枚のみ。既にある場合は差し替える。
+// サムネイル画像は1枚のみ。既にある場合は追加しない(先に削除してもらう)。
 function addPendingFiles(files) {
+  if (imageCount() >= 1) {
+    toast('サムネイル画像は1枚までです。今の画像を削除してから追加してください', 'error');
+    return;
+  }
   const f = Array.from(files).find(x => x.type.startsWith('image/'));
   if (!f) { toast('画像ファイルを選択してください', 'error'); return; }
-  const had = edit.existingImages.length > 0 || edit.pendingFiles.length > 0;
-  // 既存(保存済み)画像は削除予約、未保存分は破棄
-  while (edit.existingImages.length) edit.removedImages.push(edit.existingImages.pop());
-  edit.pendingFiles.forEach(pf => pf._preview && URL.revokeObjectURL(pf._preview));
-  edit.pendingFiles = [];
   f._preview = URL.createObjectURL(f);
   edit.pendingFiles.push(f);
   renderEditImages();
-  if (had) toast('サムネイル画像を差し替えました（1枚のみ）', 'success');
 }
 
 async function handleSaveRecord() {
@@ -1864,10 +1866,18 @@ async function handleSaveRecord() {
     showLoading(true, 'データ保存中...');
     await saveData(`save record: ${rec.itemName || rec.itemNumber || rec.id}`);
 
+    // 保存後もモーダルは開いたまま。作業用stateを保存済みの内容に同期して、
+    // 続けて「保存」を押しても二重アップロードにならないようにする。
     edit.pendingFiles.forEach(pf => pf._preview && URL.revokeObjectURL(pf._preview));
     edit.pendingFiles = [];
     edit.pendingDocs = {}; edit.removedDocs = []; edit.removedImages = [];
-    closeModal('editModal');
+    edit.existingImages = (rec.images || []).map(im => ({ ...im }));
+    edit.docs = {};
+    DOC_SLOTS.forEach(s => { if (rec.docs[s.key]) edit.docs[s.key] = { ...rec.docs[s.key] }; });
+    document.getElementById('editTitle').textContent = '検査結果を編集';
+    document.getElementById('btnDeleteRecord').style.display = 'inline-block';
+    renderEditImages();
+    renderDocSlots();
     render();
     toast('保存しました', 'success');
   } catch (e) {
