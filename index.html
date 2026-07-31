@@ -463,13 +463,45 @@ body {
   padding: 1px 6px; border-radius: 8px;
 }
 
+/* ===== 関連書類スロット (編集フォーム) ===== */
+.doc-slots { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px; }
+.doc-slot { border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px 12px; background: var(--bg); }
+.doc-slot.dragover { border-color: var(--primary); background: var(--primary-light); }
+.doc-slot-label { font-size: 12px; font-weight: 600; color: var(--text); margin-bottom: 6px; display: flex; align-items: center; gap: 6px; }
+.doc-slot-empty { font-size: 12px; color: var(--text-light); }
+.doc-slot-pick { display: inline-block; margin-top: 4px; padding: 6px 10px; font-size: 12px; border: 1px dashed var(--border); border-radius: 8px; background: var(--surface); color: var(--text); cursor: pointer; }
+.doc-slot-pick:hover { border-color: var(--primary); color: var(--primary-dark); }
+.doc-file { display: flex; align-items: center; gap: 8px; font-size: 12px; }
+.doc-file-icon { font-size: 18px; flex-shrink: 0; }
+.doc-file-info { flex: 1; min-width: 0; }
+.doc-file-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 500; }
+.doc-file-meta { color: var(--text-light); font-size: 11px; margin-top: 2px; }
+.doc-file-actions { display: flex; gap: 4px; flex-shrink: 0; }
+.doc-btn { padding: 4px 7px; font-size: 12px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); cursor: pointer; line-height: 1.2; }
+.doc-btn:hover { background: var(--bg); }
+.doc-btn.del { color: var(--fail); }
+.doc-pending { font-size: 9px; background: var(--warning-text); color: #fff; padding: 1px 6px; border-radius: 8px; margin-left: 4px; }
+
 /* ===== Detail view ===== */
 .detail-grid { display: grid; grid-template-columns: 1fr; gap: 8px; }
 .detail-row { display: grid; grid-template-columns: 90px 1fr; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--border-light); font-size: 13px; }
 .detail-row .k { color: var(--text-light); font-size: 12px; font-weight: 600; }
 .detail-row .v { word-break: break-word; }
-.detail-imgs { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px,1fr)); gap: 10px; margin-top: 14px; }
-.detail-imgs img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: var(--radius-sm); cursor: zoom-in; border: 1px solid var(--border-light); }
+.detail-imgs { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
+.detail-imgs img { width: 160px; height: 160px; object-fit: cover; border-radius: var(--radius-sm); cursor: zoom-in; border: 1px solid var(--border-light); }
+.detail-imgs .no-img-box {
+  width: 160px; height: 160px; border: 1px dashed var(--border); border-radius: var(--radius-sm);
+  display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 4px;
+  color: var(--text-light); font-size: 12px; background: var(--bg);
+}
+
+/* ===== 関連書類 (詳細) ===== */
+.detail-docs-wrap { margin-top: 18px; }
+.detail-docs-title { font-size: 12px; font-weight: 600; color: var(--text-light); margin-bottom: 8px; }
+.detail-docs { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 8px; }
+.detail-doc { display: flex; align-items: center; gap: 8px; border: 1px solid var(--border-light); border-radius: var(--radius-sm); padding: 9px 11px; background: var(--bg); font-size: 12px; }
+.detail-doc.empty { color: var(--text-light); border-style: dashed; }
+.detail-doc .doc-file-info { flex: 1; min-width: 0; }
 
 /* ===== Lightbox ===== */
 .lightbox {
@@ -527,7 +559,7 @@ body {
   <div class="header-spacer"></div>
   <div class="header-actions">
     <span class="conn-pill off" id="connPill">未接続</span>
-    <span class="app-version" id="appVersion">v1.8.0</span>
+    <span class="app-version" id="appVersion">v1.9.0</span>
     <button class="btn-icon" id="btnReload" title="GitHubから再読み込み">🔄 更新</button>
     <button class="btn-icon" id="btnSettings" title="設定">⚙️ 設定</button>
   </div>
@@ -674,14 +706,19 @@ body {
         <textarea id="fNote" placeholder="不具合内容、注意点、確認事項など"></textarea>
       </div>
       <div class="form-row">
-        <label>画像</label>
+        <label>サムネイル画像（1枚）</label>
         <div class="img-dropzone" id="imgDropzone">
           <div class="img-dropzone-icon">📥</div>
           <div class="img-dropzone-text">画像をドラッグ＆ドロップ、またはクリックして選択</div>
-          <div class="img-dropzone-hint">JPG / PNG / WebP / GIF (複数選択可)</div>
-          <input type="file" id="fImages" accept="image/*" multiple style="display:none">
+          <div class="img-dropzone-hint">JPG / PNG / WebP / GIF ・ 1枚のみ（既にある場合は差し替え）</div>
+          <input type="file" id="fImages" accept="image/*" style="display:none">
         </div>
         <div class="img-grid" id="imgGrid"></div>
+      </div>
+      <div class="form-row">
+        <label>関連書類</label>
+        <div class="doc-slots" id="docSlots"></div>
+        <small class="form-hint">PDF / Excel(xlsx・xls) / 画像 に対応。各1ファイルずつ、保存時にGitHubへアップロードされます。</small>
       </div>
       <div class="modal-actions">
         <button class="btn-danger" id="btnDeleteRecord" style="margin-right:auto;display:none">🗑️ この検査結果を削除</button>
@@ -700,8 +737,12 @@ body {
       <button class="btn-close" onclick="closeModal('detailModal')">×</button>
     </div>
     <div class="modal-body">
-      <div class="detail-grid" id="detailGrid"></div>
       <div class="detail-imgs" id="detailImgs"></div>
+      <div class="detail-grid" id="detailGrid"></div>
+      <div class="detail-docs-wrap">
+        <div class="detail-docs-title">📎 関連書類</div>
+        <div class="detail-docs" id="detailDocs"></div>
+      </div>
       <div class="modal-actions">
         <button class="btn-secondary" onclick="closeModal('detailModal')">閉じる</button>
         <button class="btn-primary" id="btnEditFromDetail">✏️ 編集</button>
@@ -836,15 +877,25 @@ body {
 'use strict';
 
 /* ======================================================================
-   検査結果保存くん — v1.8.0
+   検査結果保存くん — v1.9.0
    データ保存: GitHub (Contents API)
-     - データ:   kensa-data/records.json  { version, records[], agencies[] }
-     - 画像:     kensa-data/images/{recordId}/{filename}
+     - データ:   kensa-data/records.json  { version, records[], agencies[], categories[], flow }
+     - 画像:     kensa-data/images/{recordId}/{filename}      (サムネイル1枚)
+     - 書類:     kensa-data/files/{recordId}/{slot}/{filename} (4種)
    ====================================================================== */
 
-const APP_VERSION = 'v1.8.0';
+const APP_VERSION = 'v1.9.0';
 const LS_AUTH = 'kensa_auth';
 const DATA_PATH = 'kensa-data/records.json';
+
+// 関連書類スロット(各1ファイル)
+const DOC_SLOTS = [
+  { key: 'application', label: '試験応募書類', icon: '📝' },
+  { key: 'quote',       label: '見積書',       icon: '💴' },
+  { key: 'invoice',     label: '請求書',       icon: '🧾' },
+  { key: 'report',      label: '検査結果',     icon: '📄' }
+];
+const DOC_ACCEPT = '.pdf,.xlsx,.xls,.xlsm,.csv,image/*';
 
 // ----- state -----
 let auth = { pat: '', owner: '', repo: '', branch: 'main' };
@@ -856,7 +907,8 @@ let searchText = '';
 let agencySearchText = '';
 
 // 検査結果編集モーダルの作業用
-let edit = { id: null, existingImages: [], removedImages: [], pendingFiles: [] };
+let edit = { id: null, existingImages: [], removedImages: [], pendingFiles: [],
+             docs: {}, pendingDocs: {}, removedDocs: [] };
 
 /* ==================== GitHub helpers ==================== */
 async function ghFetch(path, opts = {}) {
@@ -957,38 +1009,52 @@ async function saveData(message, retryCount = 0) {
 }
 
 function imagePath(recordId, filename) { return `kensa-data/images/${recordId}/${filename}`; }
+function docPath(recordId, slotKey, filename) { return `kensa-data/files/${recordId}/${slotKey}/${filename}`; }
 
-async function uploadImage(recordId, file) {
-  const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
+function safeFilename(file, fallbackExt) {
+  const ext = (file.name.split('.').pop() || fallbackExt || 'dat').toLowerCase().replace(/[^a-z0-9]/g, '') || 'dat';
   const safeBase = file.name.replace(/\.[^.]+$/, '').replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 40);
-  const filename = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}_${safeBase}.${ext}`;
-  const path = imagePath(recordId, filename);
+  return `${Date.now()}_${Math.random().toString(36).slice(2, 8)}_${safeBase}.${ext}`;
+}
+
+// GitHubへ1ファイルをアップロード（画像・書類 共通）
+async function uploadToGitHub(path, file, idPrefix) {
   const content = await fileToBase64(file);
+  const filename = path.split('/').pop();
   const res = await ghFetch(`contents/${path}`, {
     method: 'PUT',
-    body: JSON.stringify({ message: `upload image: ${filename}`, content, branch: auth.branch })
+    body: JSON.stringify({ message: `upload: ${filename}`, content, branch: auth.branch })
   });
-  if (!res.ok) { const err = await res.json().catch(() => ({})); throw new Error(err.message || '画像アップロード失敗'); }
+  if (!res.ok) { const err = await res.json().catch(() => ({})); throw new Error(err.message || 'アップロード失敗'); }
   const result = await res.json();
   return {
-    id: 'img_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8),
+    id: idPrefix + '_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8),
     filename, originalName: file.name, path,
     sha: result.content.sha, url: result.content.download_url,
-    size: file.size, uploadedAt: new Date().toISOString()
+    size: file.size, mime: file.type || '', uploadedAt: new Date().toISOString()
   };
 }
 
+async function uploadImage(recordId, file) {
+  return uploadToGitHub(imagePath(recordId, safeFilename(file, 'jpg')), file, 'img');
+}
+
+async function uploadDoc(recordId, slotKey, file) {
+  return uploadToGitHub(docPath(recordId, slotKey, safeFilename(file, 'pdf')), file, 'doc');
+}
+
 async function deleteImage(meta) {
-  if (!meta.path || !meta.sha) return;
+  if (!meta || !meta.path || !meta.sha) return;
   const res = await ghFetch(`contents/${meta.path}`, {
     method: 'DELETE',
-    body: JSON.stringify({ message: `delete image: ${meta.filename}`, sha: meta.sha, branch: auth.branch })
+    body: JSON.stringify({ message: `delete: ${meta.filename}`, sha: meta.sha, branch: auth.branch })
   });
   if (!res.ok && res.status !== 404) {
     const err = await res.json().catch(() => ({}));
-    console.warn('画像削除失敗', err.message);
+    console.warn('ファイル削除失敗', err.message);
   }
 }
+const deleteDoc = deleteImage; // 削除処理は共通
 
 /* ==================== auth / settings ==================== */
 function loadAuth() {
@@ -1055,6 +1121,49 @@ function agencyNameOf(r) {
   }
   return r.agencyName || '';
 }
+/* ---- 関連書類ヘルパ ---- */
+function docExt(meta) {
+  const n = (meta && (meta.originalName || meta.filename)) || '';
+  return (n.split('.').pop() || '').toLowerCase();
+}
+function docIcon(meta) {
+  const e = docExt(meta);
+  if (e === 'pdf') return '📕';
+  if (['xlsx', 'xls', 'xlsm', 'csv'].includes(e)) return '📗';
+  if (['jpg', 'jpeg', 'png', 'webp', 'gif', 'bmp'].includes(e)) return '🖼️';
+  return '📎';
+}
+function isImageDoc(meta) {
+  return ['jpg', 'jpeg', 'png', 'webp', 'gif', 'bmp'].includes(docExt(meta));
+}
+function isPdfDoc(meta) { return docExt(meta) === 'pdf'; }
+function fmtSize(bytes) {
+  if (!bytes && bytes !== 0) return '';
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(0) + ' KB';
+  return (bytes / 1024 / 1024).toFixed(1) + ' MB';
+}
+// クロスオリジンでも確実にダウンロードさせる(blob経由 / 失敗時は新規タブ)
+async function downloadFile(url, filename) {
+  try {
+    showLoading(true, 'ダウンロード準備中...');
+    const res = await fetch(url, { cache: 'no-store' });
+    if (!res.ok) throw new Error('fetch ' + res.status);
+    const blob = await res.blob();
+    const objUrl = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = objUrl; a.download = filename || 'download';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(objUrl), 10000);
+  } catch (e) {
+    console.warn('download fallback', e);
+    window.open(url, '_blank', 'noopener');
+  } finally {
+    showLoading(false);
+  }
+}
+function openDocInTab(url) { window.open(url, '_blank', 'noopener'); }
+
 function categoryNameOf(r) {
   if (r.categoryId) {
     const c = (state.categories || []).find(x => x.id === r.categoryId);
@@ -1346,9 +1455,37 @@ function openDetail(id) {
   const imgs = r.images || [];
   document.getElementById('detailImgs').innerHTML = imgs.length
     ? imgs.map(im => `<img src="${escAttr(im.url)}" alt="" loading="lazy" onclick="openLightbox('${escAttr(im.url)}')">`).join('')
-    : '<div style="color:var(--text-light);font-size:13px;padding:8px 0">画像なし</div>';
+    : '<div class="no-img-box"><span style="font-size:26px">🖼️</span><span>画像なし</span></div>';
+  renderDetailDocs(r);
   document.getElementById('btnEditFromDetail').onclick = () => { closeModal('detailModal'); openEdit(id); };
   showModal('detailModal');
+}
+
+function renderDetailDocs(r) {
+  const docs = r.docs || {};
+  document.getElementById('detailDocs').innerHTML = DOC_SLOTS.map(s => {
+    const m = docs[s.key];
+    if (!m) {
+      return `<div class="detail-doc empty"><span class="doc-file-icon">${s.icon}</span>
+        <div class="doc-file-info"><div class="doc-file-name">${esc(s.label)}</div>
+        <div class="doc-file-meta">未登録</div></div></div>`;
+    }
+    const canOpen = isPdfDoc(m) || isImageDoc(m);
+    const openBtn = isImageDoc(m)
+      ? `<button class="doc-btn" title="拡大表示" onclick="openLightbox('${escAttr(m.url)}')">🔍</button>`
+      : (canOpen ? `<button class="doc-btn" title="新しいタブで開く" onclick="openDocInTab('${escAttr(m.url)}')">🔗</button>` : '');
+    return `<div class="detail-doc">
+      <span class="doc-file-icon">${docIcon(m)}</span>
+      <div class="doc-file-info">
+        <div class="doc-file-name" title="${escAttr(m.originalName || m.filename)}">${esc(s.label)}</div>
+        <div class="doc-file-meta">${esc(m.originalName || m.filename)}${m.size ? ' ・ ' + fmtSize(m.size) : ''}</div>
+      </div>
+      <div class="doc-file-actions">
+        ${openBtn}
+        <button class="doc-btn" title="ダウンロード" onclick="downloadFile('${escAttr(m.url)}','${escAttr(m.originalName || m.filename)}')">⬇</button>
+      </div>
+    </div>`;
+  }).join('');
 }
 
 /* ==================== result add / edit ==================== */
@@ -1497,7 +1634,8 @@ async function deleteCategory(id) {
 function openEdit(id) {
   const isNew = !id;
   edit = { id: id || ('rec_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6)),
-           existingImages: [], removedImages: [], pendingFiles: [] };
+           existingImages: [], removedImages: [], pendingFiles: [],
+           docs: {}, pendingDocs: {}, removedDocs: [] };
   document.getElementById('editTitle').textContent = isNew ? '検査結果を追加' : '検査結果を編集';
   document.getElementById('editId').value = edit.id;
   document.getElementById('btnDeleteRecord').style.display = isNew ? 'none' : 'inline-block';
@@ -1531,9 +1669,94 @@ function openEdit(id) {
     populateCategorySelect(r.categoryId || '');
     showCatAdd(false);
     edit.existingImages = (r.images || []).map(im => ({ ...im }));
+    const d = r.docs || {};
+    DOC_SLOTS.forEach(s => { if (d[s.key]) edit.docs[s.key] = { ...d[s.key] }; });
   }
   renderEditImages();
+  renderDocSlots();
   showModal('editModal');
+}
+
+/* ---- 関連書類スロット (編集フォーム) ---- */
+function renderDocSlots() {
+  const wrap = document.getElementById('docSlots');
+  wrap.innerHTML = DOC_SLOTS.map(s => {
+    const pending = edit.pendingDocs[s.key];
+    const saved = edit.docs[s.key];
+    let inner;
+    if (pending) {
+      inner = `<div class="doc-file">
+        <span class="doc-file-icon">${docIcon({ originalName: pending.name })}</span>
+        <div class="doc-file-info">
+          <div class="doc-file-name" title="${escAttr(pending.name)}">${esc(pending.name)}<span class="doc-pending">未保存</span></div>
+          <div class="doc-file-meta">${fmtSize(pending.size)}</div>
+        </div>
+        <div class="doc-file-actions">
+          <button type="button" class="doc-btn del" title="取消" onclick="clearDocSlot('${s.key}')">×</button>
+        </div>
+      </div>`;
+    } else if (saved) {
+      const openBtn = isImageDoc(saved)
+        ? `<button type="button" class="doc-btn" title="拡大表示" onclick="openLightbox('${escAttr(saved.url)}')">🔍</button>`
+        : (isPdfDoc(saved) ? `<button type="button" class="doc-btn" title="新しいタブで開く" onclick="openDocInTab('${escAttr(saved.url)}')">🔗</button>` : '');
+      inner = `<div class="doc-file">
+        <span class="doc-file-icon">${docIcon(saved)}</span>
+        <div class="doc-file-info">
+          <div class="doc-file-name" title="${escAttr(saved.originalName || saved.filename)}">${esc(saved.originalName || saved.filename)}</div>
+          <div class="doc-file-meta">${fmtSize(saved.size)}</div>
+        </div>
+        <div class="doc-file-actions">
+          ${openBtn}
+          <button type="button" class="doc-btn" title="ダウンロード" onclick="downloadFile('${escAttr(saved.url)}','${escAttr(saved.originalName || saved.filename)}')">⬇</button>
+          <button type="button" class="doc-btn del" title="削除" onclick="clearDocSlot('${s.key}')">🗑️</button>
+        </div>
+      </div>`;
+    } else {
+      inner = `<div class="doc-slot-empty">未登録
+        <div><label class="doc-slot-pick" for="fDoc_${s.key}">＋ ファイルを選択</label></div>
+      </div>`;
+    }
+    return `<div class="doc-slot" data-slot="${s.key}">
+      <div class="doc-slot-label">${s.icon} ${esc(s.label)}</div>
+      ${inner}
+      <input type="file" id="fDoc_${s.key}" accept="${DOC_ACCEPT}" style="display:none">
+    </div>`;
+  }).join('');
+  // ファイル選択 / ドラッグ&ドロップ を配線
+  DOC_SLOTS.forEach(s => {
+    const input = document.getElementById('fDoc_' + s.key);
+    input.onchange = () => { if (input.files.length) setDocSlotFile(s.key, input.files[0]); input.value = ''; };
+    const slot = document.querySelector(`.doc-slot[data-slot="${s.key}"]`);
+    slot.addEventListener('dragover', e => { e.preventDefault(); slot.classList.add('dragover'); });
+    slot.addEventListener('dragleave', () => slot.classList.remove('dragover'));
+    slot.addEventListener('drop', e => {
+      e.preventDefault(); slot.classList.remove('dragover');
+      if (e.dataTransfer.files.length) setDocSlotFile(s.key, e.dataTransfer.files[0]);
+    });
+  });
+}
+
+function isAllowedDoc(file) {
+  const ext = (file.name.split('.').pop() || '').toLowerCase();
+  return ['pdf', 'xlsx', 'xls', 'xlsm', 'csv', 'jpg', 'jpeg', 'png', 'webp', 'gif', 'bmp'].includes(ext);
+}
+
+function setDocSlotFile(slotKey, file) {
+  if (!isAllowedDoc(file)) { toast('PDF / Excel / 画像 のみ登録できます', 'error'); return; }
+  // 既に保存済みファイルがある場合は差し替え(保存時に旧ファイルを削除)
+  if (edit.docs[slotKey]) { edit.removedDocs.push(edit.docs[slotKey]); delete edit.docs[slotKey]; }
+  edit.pendingDocs[slotKey] = file;
+  renderDocSlots();
+}
+
+function clearDocSlot(slotKey) {
+  if (edit.pendingDocs[slotKey]) {
+    delete edit.pendingDocs[slotKey];
+  } else if (edit.docs[slotKey]) {
+    edit.removedDocs.push(edit.docs[slotKey]);
+    delete edit.docs[slotKey];
+  }
+  renderDocSlots();
 }
 
 function renderEditImages() {
@@ -1562,13 +1785,19 @@ function removePendingImage(i) {
   if (pf && pf._preview) URL.revokeObjectURL(pf._preview);
   renderEditImages();
 }
+// サムネイル画像は1枚のみ。既にある場合は差し替える。
 function addPendingFiles(files) {
-  for (const f of files) {
-    if (!f.type.startsWith('image/')) continue;
-    f._preview = URL.createObjectURL(f);
-    edit.pendingFiles.push(f);
-  }
+  const f = Array.from(files).find(x => x.type.startsWith('image/'));
+  if (!f) { toast('画像ファイルを選択してください', 'error'); return; }
+  const had = edit.existingImages.length > 0 || edit.pendingFiles.length > 0;
+  // 既存(保存済み)画像は削除予約、未保存分は破棄
+  while (edit.existingImages.length) edit.removedImages.push(edit.existingImages.pop());
+  edit.pendingFiles.forEach(pf => pf._preview && URL.revokeObjectURL(pf._preview));
+  edit.pendingFiles = [];
+  f._preview = URL.createObjectURL(f);
+  edit.pendingFiles.push(f);
   renderEditImages();
+  if (had) toast('サムネイル画像を差し替えました（1枚のみ）', 'success');
 }
 
 async function handleSaveRecord() {
@@ -1603,6 +1832,7 @@ async function handleSaveRecord() {
     inspector: document.getElementById('fInspector').value.trim(),
     note: document.getElementById('fNote').value.trim(),
     images: edit.existingImages.slice(),
+    docs: { ...edit.docs },
     createdAt: (state.records.find(x => x.id === edit.id) || {}).createdAt || new Date().toISOString(),
     updatedAt: new Date().toISOString()
   };
@@ -1614,9 +1844,19 @@ async function handleSaveRecord() {
       const meta = await uploadImage(edit.id, edit.pendingFiles[i]);
       rec.images.push(meta);
     }
+    const pendingSlots = DOC_SLOTS.filter(s => edit.pendingDocs[s.key]);
+    for (let i = 0; i < pendingSlots.length; i++) {
+      const s = pendingSlots[i];
+      showLoading(true, `書類アップロード中... ${s.label} (${i + 1}/${pendingSlots.length})`);
+      rec.docs[s.key] = await uploadDoc(edit.id, s.key, edit.pendingDocs[s.key]);
+    }
     for (const im of edit.removedImages) {
       showLoading(true, '画像を削除中...');
       await deleteImage(im);
+    }
+    for (const dm of edit.removedDocs) {
+      showLoading(true, '書類を削除中...');
+      await deleteDoc(dm);
     }
     const idx = state.records.findIndex(x => x.id === rec.id);
     if (idx >= 0) state.records[idx] = rec; else state.records.push(rec);
@@ -1626,6 +1866,7 @@ async function handleSaveRecord() {
 
     edit.pendingFiles.forEach(pf => pf._preview && URL.revokeObjectURL(pf._preview));
     edit.pendingFiles = [];
+    edit.pendingDocs = {}; edit.removedDocs = []; edit.removedImages = [];
     closeModal('editModal');
     render();
     toast('保存しました', 'success');
@@ -1640,10 +1881,11 @@ async function handleSaveRecord() {
 async function handleDeleteRecord() {
   const r = state.records.find(x => x.id === edit.id);
   if (!r) return;
-  if (!confirm(`「${r.itemName || r.itemNumber || 'この検査結果'}」を削除します。よろしいですか?\n(登録画像もGitHubから削除されます)`)) return;
+  if (!confirm(`「${r.itemName || r.itemNumber || 'この検査結果'}」を削除します。よろしいですか?\n(登録画像・関連書類もGitHubから削除されます)`)) return;
   showLoading(true, '削除中...');
   try {
     for (const im of (r.images || [])) { await deleteImage(im); }
+    for (const s of DOC_SLOTS) { const d = (r.docs || {})[s.key]; if (d) await deleteDoc(d); }
     state.records = state.records.filter(x => x.id !== r.id);
     await saveData(`delete record: ${r.itemName || r.id}`);
     closeModal('editModal');
