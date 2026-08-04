@@ -40,10 +40,21 @@
           "size": 462319,
           "mime": "application/pdf",
           "uploadedAt": "2026-07-31T08:13:35.576Z"
+        },
+        "invoice": {
+          "id": "doc_1785805185912_efhmr6",
+          "filename": "1785805184130_qt53u7_______________.pdf",
+          "originalName": "【請求書】カミカミネックレス.pdf",
+          "path": "kensa-data/files/rec_1785224421374_m550/invoice/1785805184130_qt53u7_______________.pdf",
+          "sha": "351b506049c7e377ee77c09e84a5241289987ae2",
+          "url": "https://raw.githubusercontent.com/kaiyoshida0318/kensa-kekka/main/kensa-data/files/rec_1785224421374_m550/invoice/1785805184130_qt53u7_______________.pdf",
+          "size": 201738,
+          "mime": "application/pdf",
+          "uploadedAt": "2026-08-04T00:59:45.912Z"
         }
       },
       "createdAt": "2026-07-28T07:40:30.513Z",
-      "updatedAt": "2026-07-31T08:13:33.502Z"
+      "updatedAt": "2026-08-04T00:59:44.129Z"
     },
     {
       "id": "rec_1785402394577_3rm3",
