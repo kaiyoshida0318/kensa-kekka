@@ -51,10 +51,21 @@
           "size": 201738,
           "mime": "application/pdf",
           "uploadedAt": "2026-08-04T00:59:45.912Z"
+        },
+        "application": {
+          "id": "doc_1785805921055_270n3i",
+          "filename": "1785805919450_ih01t2__________________.pdf",
+          "originalName": "【試験応募書類】カミカミネックレス.pdf",
+          "path": "kensa-data/files/rec_1785224421374_m550/application/1785805919450_ih01t2__________________.pdf",
+          "sha": "567497d08f5777aaa3469510902cfc9faecf04d9",
+          "url": "https://raw.githubusercontent.com/kaiyoshida0318/kensa-kekka/main/kensa-data/files/rec_1785224421374_m550/application/1785805919450_ih01t2__________________.pdf",
+          "size": 71484,
+          "mime": "application/pdf",
+          "uploadedAt": "2026-08-04T01:12:01.055Z"
         }
       },
       "createdAt": "2026-07-28T07:40:30.513Z",
-      "updatedAt": "2026-08-04T00:59:44.129Z"
+      "updatedAt": "2026-08-04T01:11:59.450Z"
     },
     {
       "id": "rec_1785402394577_3rm3",
