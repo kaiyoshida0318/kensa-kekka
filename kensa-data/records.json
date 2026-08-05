@@ -1,5 +1,5 @@
 {
-  "version": "v1.9.3",
+  "version": "v1.12.0",
   "records": [
     {
       "id": "rec_1785224421374_m550",
@@ -281,6 +281,26 @@
     {
       "id": "cat_1785459257347_hjwb",
       "name": "物性"
+    }
+  ],
+  "inspections": [
+    {
+      "id": "ins_mig_xrl664lp",
+      "division": "",
+      "field": "有害物質",
+      "item": "",
+      "note": "",
+      "createdAt": "2026-08-05T08:04:55.205Z",
+      "updatedAt": "2026-08-05T08:04:55.205Z"
+    },
+    {
+      "id": "ins_mig_j77dlain",
+      "division": "訴求目的検査",
+      "field": "物性",
+      "item": "",
+      "note": "",
+      "createdAt": "2026-08-05T08:04:55.205Z",
+      "updatedAt": "2026-08-05T08:05:19.890Z"
     }
   ],
   "flow": "①どんな検査が良さそうかChatGPTに相談\n(本格的な検査を提案しがちだから最低限LPに載せられる検査を探してもらう)\nhttps://chatgpt.com/g/g-p-699d6049f8208191b61ff8bbd1d64e35/c/6a6851ad-f2a0-83ee-8e99-bae95851eb79"
