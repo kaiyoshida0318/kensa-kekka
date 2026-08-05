@@ -495,6 +495,13 @@ body {
 .tbl-grouped .field-cell { border-right: 1px solid var(--border-light); background: var(--bg); }
 .tbl-grouped .field-cnt { display: inline-block; margin-left: 8px; font-size: 10px; font-weight: 500; color: var(--text-light); background: var(--surface); border: 1px solid var(--border); border-radius: 9px; padding: 0 6px; vertical-align: middle; }
 .tbl-grouped tr.ins-sub td { border-top: 1px dashed var(--border-light); }
+.prd-thumb { width: 44px; height: 44px; object-fit: cover; border-radius: 8px; border: 1px solid var(--border-light); display: block; }
+.prd-thumb-none { display: flex; align-items: center; justify-content: center; background: var(--bg); color: var(--text-light); font-size: 18px; }
+.badge-status { display: inline-block; font-size: 11px; font-weight: 600; padding: 2px 9px; border-radius: 10px; }
+.badge-status.pass { background: #e6f4ec; color: #1a7f46; }
+.badge-status.fail { background: #fdeaea; color: #c0392b; }
+.badge-status.progress { background: #eef1fd; color: #3b4cca; }
+.badge-status.none { background: var(--bg); color: var(--text-light); border: 1px solid var(--border); }
 .ag-ins-row { font-size: 12px; padding: 3px 0; }
 .ag-ins-div { display: inline-block; font-size: 10px; background: var(--primary-light); color: var(--primary-dark); border-radius: 8px; padding: 1px 7px; margin-right: 6px; }
 .ag-ins-sep { color: var(--text-light); margin: 0 6px; }
@@ -581,7 +588,7 @@ body {
   <div class="header-spacer"></div>
   <div class="header-actions">
     <span class="conn-pill off" id="connPill">未接続</span>
-    <span class="app-version" id="appVersion">v1.15.0</span>
+    <span class="app-version" id="appVersion">v1.16.0</span>
     <button class="btn-icon" id="btnReload" title="GitHubから再読み込み">🔄 更新</button>
     <button class="btn-icon" id="btnSettings" title="設定">⚙️ 設定</button>
   </div>
@@ -590,6 +597,7 @@ body {
 <!-- ============ Tabs ============ -->
 <div class="tab-bar">
   <button class="tab-btn active" data-tab="results" id="tabResults">📋 検査結果 <span class="cnt" id="tabResultsCnt"></span></button>
+  <button class="tab-btn" data-tab="products" id="tabProducts">📦 商品 <span class="cnt" id="tabProductsCnt"></span></button>
   <button class="tab-btn" data-tab="inspections" id="tabInspections">🔬 検査の種類 <span class="cnt" id="tabInspectionsCnt"></span></button>
   <button class="tab-btn" data-tab="agencies" id="tabAgencies">🏢 検査機関 <span class="cnt" id="tabAgenciesCnt"></span></button>
   <button class="tab-btn" data-tab="flow" id="tabFlow">📖 検査の基本的な流れ</button>
@@ -631,6 +639,17 @@ body {
   <button class="btn-add" id="btnAddAgency">＋ 検査機関を追加</button>
 </div>
 
+<!-- ============ Toolbar: products ============ -->
+<div class="toolbar" id="toolbarProducts" style="display:none">
+  <div class="search-box">
+    <span class="search-icon">🔍</span>
+    <input type="text" id="productSearch" placeholder="商品名・商品番号で検索...">
+  </div>
+  <div class="toolbar-spacer"></div>
+  <span class="result-count" id="productCount"></span>
+  <button class="btn-add" id="btnAddProduct">＋ 商品を追加</button>
+</div>
+
 <!-- ============ Toolbar: inspections ============ -->
 <div class="toolbar" id="toolbarInspections" style="display:none">
   <div class="search-box">
@@ -655,6 +674,7 @@ body {
   <div class="grid" id="grid"></div>
   <div id="agencyTableWrap" style="display:none"></div>
   <div id="inspectionTableWrap" style="display:none"></div>
+  <div id="productTableWrap" style="display:none"></div>
   <div id="flowPanel" style="display:none">
     <div class="flow-panel-bar">
       <div class="flow-panel-actions" id="flowViewActions">
@@ -713,15 +733,19 @@ body {
           </div>
         </div>
       </div>
-      <div class="form-2col">
-        <div class="form-row">
-          <label>商品名 <span style="color:var(--fail)">*</span></label>
-          <input type="text" id="fName" placeholder="例: ステンレスボトル 500ml">
+      <div class="form-row">
+        <label>商品 <span style="color:var(--fail)">*</span></label>
+        <div class="cat-select-wrap">
+          <select id="fProduct"><option value="">（未選択）</option></select>
+          <button type="button" class="btn-cat-add" id="btnAddProductInline">＋ 新規</button>
         </div>
-        <div class="form-row">
-          <label>商品番号</label>
-          <input type="text" id="fNumber" placeholder="例: cab-16-01">
+        <div class="cat-add-inline" id="productAddInline" style="display:none">
+          <input type="text" id="fNewProductName" placeholder="商品名">
+          <input type="text" id="fNewProductNumber" placeholder="商品番号（任意）" style="max-width:200px">
+          <button type="button" class="btn-cat-confirm" id="btnConfirmProduct">追加</button>
+          <button type="button" class="btn-cat-cancel" id="btnCancelProduct" title="キャンセル">×</button>
         </div>
+        <small class="form-hint">商品情報の編集は「商品」タブで行います</small>
       </div>
       <div class="form-2col">
         <div class="form-row">
@@ -845,6 +869,70 @@ body {
   </div>
 </div>
 
+<!-- ============ Product Detail Modal ============ -->
+<div class="modal-backdrop" id="productDetailModal" style="display:none">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <h2 id="productDetailTitle">商品</h2>
+      <button class="btn-close" onclick="closeModal('productDetailModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="detail-imgs" id="productDetailImgs"></div>
+      <div class="detail-grid" id="productDetailGrid"></div>
+      <div class="form-row" style="margin-top:16px;margin-bottom:0">
+        <label>この商品の検査結果 <span id="productDetailRecCount" style="color:var(--text-light);font-weight:400"></span></label>
+        <div id="productDetailRecs"></div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-secondary" onclick="closeModal('productDetailModal')">閉じる</button>
+        <button class="btn-primary" id="btnEditProductFromDetail">✏️ 編集</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ Product Edit Modal ============ -->
+<div class="modal-backdrop" id="productModal" style="display:none">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="productModalTitle">商品を追加</h2>
+      <button class="btn-close" onclick="closeProductModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="pId">
+      <div class="form-2col">
+        <div class="form-row">
+          <label>商品名 <span style="color:var(--fail)">*</span></label>
+          <input type="text" id="pName" placeholder="例: ステンレスボトル 500ml">
+        </div>
+        <div class="form-row">
+          <label>商品番号</label>
+          <input type="text" id="pNumber" placeholder="例: cab-16-01">
+        </div>
+      </div>
+      <div class="form-row">
+        <label>商品画像（1枚）</label>
+        <div class="img-dropzone" id="pImgDropzone">
+          <div class="img-dropzone-icon">📥</div>
+          <div class="img-dropzone-text">画像をドラッグ＆ドロップ、またはクリックして選択</div>
+          <div class="img-dropzone-hint">JPG / PNG / WebP / GIF ・ 1枚のみ</div>
+          <input type="file" id="pImages" accept="image/*" style="display:none">
+        </div>
+        <div class="img-grid" id="pImgGrid"></div>
+      </div>
+      <div class="form-row">
+        <label>メモ</label>
+        <textarea id="pNote" placeholder="仕様、仕向け先、注意点など"></textarea>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-danger" id="btnDeleteProduct" style="margin-right:auto;display:none">🗑️ この商品を削除</button>
+        <button class="btn-secondary" onclick="closeProductModal()">キャンセル</button>
+        <button class="btn-primary" id="btnSaveProduct">保存</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ============ Inspection Edit Modal ============ -->
 <div class="modal-backdrop" id="inspectionModal" style="display:none">
   <div class="modal">
@@ -948,14 +1036,14 @@ body {
 'use strict';
 
 /* ======================================================================
-   検査結果保存くん — v1.15.0
+   検査結果保存くん — v1.16.0
    データ保存: GitHub (Contents API)
      - データ:   kensa-data/records.json  { version, records[], agencies[], categories[], flow }
      - 画像:     kensa-data/images/{recordId}/{filename}      (サムネイル1枚)
      - 書類:     kensa-data/files/{recordId}/{slot}/{filename} (4種)
    ====================================================================== */
 
-const APP_VERSION = 'v1.15.0';
+const APP_VERSION = 'v1.16.0';
 const LS_AUTH = 'kensa_auth';
 const DATA_PATH = 'kensa-data/records.json';
 
@@ -973,7 +1061,7 @@ const DIVISIONS = ['訴求目的検査', '必要検査'];
 
 // ----- state -----
 let auth = { pat: '', owner: '', repo: '', branch: 'main' };
-let state = { records: [], agencies: [], categories: [], inspections: [], flow: '', sha: null, _loadFailed: false, _wasEmpty: false };
+let state = { records: [], products: [], agencies: [], categories: [], inspections: [], flow: '', sha: null, _loadFailed: false, _wasEmpty: false };
 let currentTab = 'results';
 let filterResult = 'all';
 let filterRecDivision = 'all';
@@ -981,6 +1069,7 @@ let filterRecField = 'all';
 let searchText = '';
 let agencySearchText = '';
 let inspectionSearchText = '';
+let productSearchText = '';
 let filterDivision = 'all';
 let filterField = 'all';
 
@@ -1055,6 +1144,7 @@ async function loadRecords() {
       agencies: Array.isArray(json.agencies) ? json.agencies : [],
       categories: Array.isArray(json.categories) ? json.categories : [],
       inspections: Array.isArray(json.inspections) ? json.inspections : [],
+      products: Array.isArray(json.products) ? json.products : [],
       flow: typeof json.flow === 'string' ? json.flow : '',
       sha: data.sha
     };
@@ -1069,7 +1159,7 @@ async function saveData(message, retryCount = 0) {
   if (state._loadFailed || state._wasEmpty) {
     throw new Error('データの読み込みに失敗しているため、上書き保存を中止しました。「🔄更新」で再読み込みしてください。');
   }
-  const content = JSON.stringify({ version: APP_VERSION, records: state.records, agencies: state.agencies, categories: state.categories || [], inspections: state.inspections || [], flow: state.flow || '' }, null, 2);
+  const content = JSON.stringify({ version: APP_VERSION, records: state.records, agencies: state.agencies, categories: state.categories || [], inspections: state.inspections || [], products: state.products || [], flow: state.flow || '' }, null, 2);
   const body = { message: message || 'update data', content: b64encode(content), branch: auth.branch };
   if (state.sha) body.sha = state.sha;
   const res = await ghFetch(`contents/${DATA_PATH}`, { method: 'PUT', body: JSON.stringify(body) });
@@ -1355,7 +1445,7 @@ function recordsForAgency(agId) {
 }
 function productChipHtml(r, mode) {
   const result = r.result || 'pass';
-  const name = r.itemName || r.itemNumber || '(無題)';
+  const name = productNameOf(r) || productNumberOf(r) || '(無題)';
   const handler = mode === 'table'
     ? `event.stopPropagation();openDetail('${r.id}')`
     : `jumpToResult('${r.id}')`;
@@ -1373,6 +1463,8 @@ function renderProductChips(records, mode, agId, limit, moreOnclick) {
   return html;
 }
 function jumpToResult(id) {
+  closeModal('productDetailModal');
+  closeModal('productModal');
   closeModal('inspectionModal');
   closeModal('agencyModal');
   closeModal('agencyDetailModal');
@@ -1385,10 +1477,12 @@ function render() {
   document.getElementById('tabResultsCnt').textContent = state.records.length;
   document.getElementById('tabAgenciesCnt').textContent = state.agencies.length;
   document.getElementById('tabInspectionsCnt').textContent = (state.inspections || []).length;
+  document.getElementById('tabProductsCnt').textContent = (state.products || []).length;
   document.getElementById('flowPanel').style.display = (currentTab === 'flow') ? 'block' : 'none';
   if (currentTab === 'results') renderResults();
   else if (currentTab === 'agencies') renderAgencies();
   else if (currentTab === 'inspections') renderInspections();
+  else if (currentTab === 'products') renderProducts();
   else renderFlowPanel();
 }
 
@@ -1398,6 +1492,7 @@ function setTab(t) {
   document.getElementById('toolbarResults').style.display = (t === 'results') ? '' : 'none';
   document.getElementById('toolbarAgencies').style.display = (t === 'agencies') ? '' : 'none';
   document.getElementById('toolbarInspections').style.display = (t === 'inspections') ? '' : 'none';
+  document.getElementById('toolbarProducts').style.display = (t === 'products') ? '' : 'none';
   if (t === 'flow') flowSetMode('view');
   render();
 }
@@ -1406,6 +1501,7 @@ function renderFlowPanel() {
   document.getElementById('grid').style.display = 'none';
   document.getElementById('agencyTableWrap').style.display = 'none';
   document.getElementById('inspectionTableWrap').style.display = 'none';
+  document.getElementById('productTableWrap').style.display = 'none';
   document.getElementById('emptyState').style.display = 'none';
   renderFlowView();
 }
@@ -1419,8 +1515,8 @@ function filteredRecords() {
   if (filterRecField !== 'all') list = list.filter(r => (fieldNameOf(r) || '').trim() === filterRecField);
   if (q) {
     list = list.filter(r =>
-      (r.itemName || '').toLowerCase().includes(q) ||
-      (r.itemNumber || '').toLowerCase().includes(q) ||
+      (productNameOf(r) || '').toLowerCase().includes(q) ||
+      (productNumberOf(r) || '').toLowerCase().includes(q) ||
       (r.inspector || '').toLowerCase().includes(q) ||
       (agencyNameOf(r) || '').toLowerCase().includes(q) ||
       (divisionNameOf(r) || '').toLowerCase().includes(q) ||
@@ -1443,6 +1539,7 @@ function renderResults() {
   const agWrap = document.getElementById('agencyTableWrap');
   agWrap.style.display = 'none';
   document.getElementById('inspectionTableWrap').style.display = 'none';
+  document.getElementById('productTableWrap').style.display = 'none';
   populateRecordFilters();
   const list = filteredRecords();
 
@@ -1492,8 +1589,8 @@ function renderResults() {
           ${countBadge}
         </div>
         <div class="card-body">
-          <div class="card-name">${esc(r.itemName || '(商品名なし)')}</div>
-          ${r.itemNumber ? `<div class="card-number">${esc(r.itemNumber)}</div>` : ''}
+          <div class="card-name">${esc(productNameOf(r) || '(商品名なし)')}</div>
+          ${productNumberOf(r) ? `<div class="card-number">${esc(productNumberOf(r))}</div>` : ''}
           ${an ? `<div class="card-agency">🏢 ${esc(an)}</div>` : ''}
           <div class="card-meta">
             <span>📅 ${fmtPeriodShort(r)}</span>
@@ -1516,7 +1613,7 @@ function filteredAgencies() {
         (x.field || '').toLowerCase().includes(q) ||
         (x.item || '').toLowerCase().includes(q)) ||
       (a.flowNote || '').toLowerCase().includes(q) ||
-      recordsForAgency(a.id).some(r => (r.itemName || '').toLowerCase().includes(q) || (r.itemNumber || '').toLowerCase().includes(q))
+      recordsForAgency(a.id).some(r => (productNameOf(r) || '').toLowerCase().includes(q) || (productNumberOf(r) || '').toLowerCase().includes(q))
     );
   }
   list.sort((a, b) => (a.name || '').localeCompare(b.name || '', 'ja'));
@@ -1529,6 +1626,7 @@ function renderAgencies() {
   const wrap = document.getElementById('agencyTableWrap');
   grid.style.display = 'none';
   document.getElementById('inspectionTableWrap').style.display = 'none';
+  document.getElementById('productTableWrap').style.display = 'none';
   const list = filteredAgencies();
 
   document.getElementById('agencyCount').textContent = `${list.length} / ${state.agencies.length} 件`;
@@ -1580,6 +1678,315 @@ function renderAgencies() {
           </tr>`).join('')}
       </tbody>
     </table>`;
+}
+
+/* ==================== 商品 (products) ==================== */
+function productList() { return Array.isArray(state.products) ? state.products : []; }
+function productOf(r) { return r.productId ? productList().find(p => p.id === r.productId) || null : null; }
+function productNameOf(r) { const p = productOf(r); return p ? (p.name || '') : (r.itemName || ''); }
+function productNumberOf(r) { const p = productOf(r); return p ? (p.number || '') : (r.itemNumber || ''); }
+function recordsForProduct(pid) {
+  return state.records.filter(r => r.productId === pid)
+    .sort((a, b) => ((b.inspectStart || b.inspectedAt || '') + (b.createdAt || ''))
+      .localeCompare((a.inspectStart || a.inspectedAt || '') + (a.createdAt || '')));
+}
+// 商品の総合ステータス
+function productStatus(pid) {
+  const recs = recordsForProduct(pid);
+  if (!recs.length) return { key: 'none', label: '検査なし' };
+  const rs = recs.map(r => r.result || 'pass');
+  if (rs.includes('fail')) return { key: 'fail', label: '不合格あり' };
+  if (rs.includes('progress')) return { key: 'progress', label: '検査中あり' };
+  return { key: 'pass', label: 'すべて合格' };
+}
+// 既存レコードから商品マスタを起こす(冪等)。商品番号→商品名 の順にキー化
+function migrateRecordsToProducts() {
+  if (!Array.isArray(state.products)) state.products = [];
+  const keyOf = r => ((r.itemNumber || '').trim() || (r.itemName || '').trim()).toLowerCase();
+  const findExisting = r => {
+    const num = (r.itemNumber || '').trim(), nm = (r.itemName || '').trim();
+    return state.products.find(p =>
+      (num && (p.number || '').trim().toLowerCase() === num.toLowerCase()) ||
+      (!num && nm && (p.name || '').trim() === nm)) || null;
+  };
+  let added = 0;
+  state.records.forEach(r => {
+    if (r.productId && state.products.some(p => p.id === r.productId)) return;
+    if (!keyOf(r)) return;
+    let prod = findExisting(r);
+    if (!prod) {
+      prod = {
+        id: 'prd_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8),
+        name: (r.itemName || '').trim() || (r.itemNumber || '').trim(),
+        number: (r.itemNumber || '').trim(), images: [], note: '',
+        createdAt: new Date().toISOString(), updatedAt: new Date().toISOString()
+      };
+      state.products.push(prod);
+      added++;
+    }
+    r.productId = prod.id;
+  });
+  return added;
+}
+
+function filteredProducts() {
+  const q = productSearchText.trim().toLowerCase();
+  let list = productList().slice();
+  if (q) {
+    list = list.filter(p =>
+      (p.name || '').toLowerCase().includes(q) ||
+      (p.number || '').toLowerCase().includes(q) ||
+      (p.note || '').toLowerCase().includes(q) ||
+      recordsForProduct(p.id).some(r => (fieldNameOf(r) || '').toLowerCase().includes(q) || (itemOf(r) || '').toLowerCase().includes(q))
+    );
+  }
+  list.sort((a, b) => (a.name || '').localeCompare(b.name || '', 'ja'));
+  return list;
+}
+
+function renderProducts() {
+  const grid = document.getElementById('grid');
+  const empty = document.getElementById('emptyState');
+  const wrap = document.getElementById('productTableWrap');
+  grid.style.display = 'none';
+  document.getElementById('agencyTableWrap').style.display = 'none';
+  document.getElementById('inspectionTableWrap').style.display = 'none';
+  const all = productList();
+  const list = filteredProducts();
+  document.getElementById('productCount').textContent = `${list.length} / ${all.length} 件`;
+
+  if (all.length === 0) {
+    wrap.style.display = 'none'; empty.style.display = 'block';
+    if (!auth.owner || !auth.repo) {
+      empty.innerHTML = `
+        <div class="empty-icon">⚙️</div>
+        <div class="empty-title">まずGitHub保存先を設定してください</div>
+        <div class="empty-desc">右上の ⚙️設定 から owner / repo / PAT を登録すると使えます。</div>
+        <button class="btn-primary" onclick="openSettings()">⚙️ 設定を開く</button>`;
+    } else {
+      empty.innerHTML = `
+        <div class="empty-icon">📦</div>
+        <div class="empty-title">まだ商品がありません</div>
+        <div class="empty-desc">右上の「＋ 商品を追加」から登録してください。</div>
+        <button class="btn-primary" onclick="openProductEdit(null)">＋ 商品を追加</button>`;
+    }
+    return;
+  }
+  if (list.length === 0) {
+    wrap.style.display = 'none'; empty.style.display = 'block';
+    empty.innerHTML = `
+      <div class="empty-icon">🔍</div>
+      <div class="empty-title">条件に一致する商品がありません</div>
+      <div class="empty-desc">検索キーワードを変えてみてください。</div>`;
+    return;
+  }
+
+  empty.style.display = 'none'; wrap.style.display = 'block';
+  wrap.innerHTML = `
+    <table class="tbl">
+      <thead>
+        <tr>
+          <th style="width:8%"></th>
+          <th style="width:22%">商品名</th>
+          <th style="width:14%">商品番号</th>
+          <th style="width:14%">検査状況</th>
+          <th style="width:32%">実施した検査</th>
+          <th style="width:10%"></th>
+        </tr>
+      </thead>
+      <tbody>
+        ${list.map(p => {
+          const st = productStatus(p.id);
+          const recs = recordsForProduct(p.id);
+          const img = (p.images || [])[0];
+          return `
+          <tr onclick="openProductDetail('${p.id}')">
+            <td>${img ? `<img class="prd-thumb" src="${escAttr(img.url)}" alt="" loading="lazy">` : '<div class="prd-thumb prd-thumb-none">🖼️</div>'}</td>
+            <td class="col-name">${esc(p.name || '(商品名なし)')}</td>
+            <td style="font-family:ui-monospace,monospace">${p.number ? esc(p.number) : '<span class="muted">—</span>'}</td>
+            <td><span class="badge-status ${st.key}">${esc(st.label)}</span>${recs.length ? ` <span class="muted">${recs.length}件</span>` : ''}</td>
+            <td><div class="pchip-wrap">${renderInspectionChips(recs, 3, `openProductDetail('${p.id}')`)}</div></td>
+            <td class="tbl-actions"><button class="btn-icon" onclick="event.stopPropagation();openProductDetail('${p.id}')">詳細を開く</button></td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>`;
+}
+
+// 検査結果を「検査の種類」名のチップで表示
+function renderInspectionChips(records, limit, moreOnclick) {
+  if (!records.length) return '<span class="pchip-empty">—</span>';
+  const shown = (limit && records.length > limit) ? records.slice(0, limit) : records;
+  let html = shown.map(r => {
+    const label = itemOf(r) || fieldNameOf(r) || '(未設定)';
+    const res = r.result || 'pass';
+    return `<button class="pchip" title="${escAttr(label)}" onclick="event.stopPropagation();openDetail('${r.id}')"><span class="pchip-dot ${res}"></span><span class="pchip-txt">${esc(label)}</span></button>`;
+  }).join('');
+  if (limit && records.length > limit) {
+    html += `<button class="pchip pchip-more" onclick="event.stopPropagation();${moreOnclick || ''}">＋${records.length - limit}件</button>`;
+  }
+  return html;
+}
+
+function openProductDetail(id) {
+  const p = productList().find(x => x.id === id);
+  if (!p) return;
+  const st = productStatus(id);
+  document.getElementById('productDetailTitle').textContent = p.name || '(商品名なし)';
+  const img = (p.images || [])[0];
+  document.getElementById('productDetailImgs').innerHTML = img
+    ? `<img src="${escAttr(img.url)}" alt="" loading="lazy" onclick="openLightbox('${escAttr(img.url)}')">`
+    : '<div class="no-img-box"><span style="font-size:26px">🖼️</span><span>画像なし</span></div>';
+  document.getElementById('productDetailGrid').innerHTML = `
+    <div class="detail-row"><span class="k">商品名</span><span class="v">${esc(p.name || '—')}</span></div>
+    <div class="detail-row"><span class="k">商品番号</span><span class="v" style="font-family:ui-monospace,monospace">${esc(p.number || '—')}</span></div>
+    <div class="detail-row"><span class="k">検査状況</span><span class="v"><span class="badge-status ${st.key}">${esc(st.label)}</span></span></div>
+    <div class="detail-row"><span class="k">メモ</span><span class="v" style="white-space:pre-wrap">${esc(p.note || '—')}</span></div>
+  `;
+  const recs = recordsForProduct(id);
+  document.getElementById('productDetailRecCount').textContent = recs.length ? `(${recs.length}件)` : '';
+  document.getElementById('productDetailRecs').innerHTML = recs.length
+    ? `<table class="tbl" style="margin-top:6px">
+        <thead><tr>
+          <th style="width:16%">合否</th><th style="width:20%">検査区分</th><th style="width:18%">検査分野</th>
+          <th style="width:24%">検査項目</th><th style="width:22%">検査期間</th>
+        </tr></thead>
+        <tbody>${recs.map(r => `
+          <tr onclick="jumpToResult('${r.id}')">
+            <td><span class="badge-result ${r.result || 'pass'}" style="position:static">${resultLabel(r.result || 'pass')}</span></td>
+            <td>${esc(divisionNameOf(r) || '—')}</td>
+            <td>${esc(fieldNameOf(r) || '—')}</td>
+            <td>${esc(itemOf(r) || '—')}</td>
+            <td>${fmtPeriodShort(r)}</td>
+          </tr>`).join('')}</tbody>
+       </table>`
+    : '<span class="pchip-empty">この商品の検査結果はまだありません</span>';
+  document.getElementById('btnEditProductFromDetail').onclick = () => { closeModal('productDetailModal'); openProductEdit(id); };
+  showModal('productDetailModal');
+}
+
+/* ---- 商品の追加・編集 ---- */
+let pedit = { id: null, existingImages: [], removedImages: [], pendingFiles: [] };
+
+function openProductEdit(id) {
+  const isNew = !id;
+  const p = isNew ? {} : (productList().find(x => x.id === id) || {});
+  pedit = { id: id || ('prd_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8)),
+            existingImages: (p.images || []).map(im => ({ ...im })), removedImages: [], pendingFiles: [] };
+  document.getElementById('productModalTitle').textContent = isNew ? '商品を追加' : '商品を編集';
+  document.getElementById('pId').value = id || '';
+  document.getElementById('pName').value = p.name || '';
+  document.getElementById('pNumber').value = p.number || '';
+  document.getElementById('pNote').value = p.note || '';
+  document.getElementById('btnDeleteProduct').style.display = isNew ? 'none' : 'inline-block';
+  renderProductImages();
+  showModal('productModal');
+}
+
+function closeProductModal() {
+  const exists = productList().some(x => x.id === pedit.id);
+  pedit.pendingFiles.forEach(pf => pf._preview && URL.revokeObjectURL(pf._preview));
+  closeModal('productModal');
+  if (exists) openProductDetail(pedit.id);
+}
+
+function productImageCount() { return pedit.existingImages.length + pedit.pendingFiles.length; }
+
+function renderProductImages() {
+  document.getElementById('pImgDropzone').style.display = productImageCount() >= 1 ? 'none' : '';
+  const existing = pedit.existingImages.map((im, i) => `
+    <div class="img-card">
+      <img class="thumb" src="${escAttr(im.url)}" alt="" onclick="openLightbox('${escAttr(im.url)}')">
+      <button class="rm" title="削除" onclick="removeProductExistingImage(${i})">×</button>
+    </div>`).join('');
+  const pending = pedit.pendingFiles.map((pf, i) => `
+    <div class="img-card">
+      <img class="thumb" src="${pf._preview}" alt="">
+      <span class="pending-tag">未保存</span>
+      <button class="rm" title="取消" onclick="removeProductPendingImage(${i})">×</button>
+    </div>`).join('');
+  document.getElementById('pImgGrid').innerHTML = existing + pending;
+}
+function removeProductExistingImage(i) {
+  const im = pedit.existingImages.splice(i, 1)[0];
+  if (im) pedit.removedImages.push(im);
+  renderProductImages();
+}
+function removeProductPendingImage(i) {
+  const pf = pedit.pendingFiles.splice(i, 1)[0];
+  if (pf && pf._preview) URL.revokeObjectURL(pf._preview);
+  renderProductImages();
+}
+function addProductPendingFiles(files) {
+  if (productImageCount() >= 1) { toast('商品画像は1枚までです。今の画像を削除してから追加してください', 'error'); return; }
+  const f = Array.from(files).find(x => x.type.startsWith('image/'));
+  if (!f) { toast('画像ファイルを選択してください', 'error'); return; }
+  f._preview = URL.createObjectURL(f);
+  pedit.pendingFiles.push(f);
+  renderProductImages();
+}
+
+async function handleSaveProduct() {
+  const name = document.getElementById('pName').value.trim();
+  if (!name) { toast('商品名を入力してください', 'error'); return; }
+  if (!auth.owner || !auth.repo) { toast('先に⚙️設定でGitHub保存先を登録してください', 'error'); openSettings(); return; }
+  if (!auth.pat) { toast('保存にはPAT(トークン)が必要です。⚙️設定から登録してください', 'error'); openSettings(); return; }
+
+  if (!Array.isArray(state.products)) state.products = [];
+  const existing = productList().find(x => x.id === pedit.id);
+  const prod = {
+    id: pedit.id, name,
+    number: document.getElementById('pNumber').value.trim(),
+    note: document.getElementById('pNote').value.trim(),
+    images: pedit.existingImages.slice(),
+    createdAt: (existing && existing.createdAt) || new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+  showLoading(true, '保存中...');
+  try {
+    for (let i = 0; i < pedit.pendingFiles.length; i++) {
+      showLoading(true, '画像アップロード中...');
+      prod.images.push(await uploadToGitHub(imagePath(prod.id, safeFilename(pedit.pendingFiles[i], 'jpg')), pedit.pendingFiles[i], 'img'));
+    }
+    for (const im of pedit.removedImages) { showLoading(true, '画像を削除中...'); await deleteImage(im); }
+    const idx = state.products.findIndex(x => x.id === prod.id);
+    if (idx >= 0) state.products[idx] = prod; else state.products.push(prod);
+    showLoading(true, 'データ保存中...');
+    await saveData(`save product: ${name}`);
+    pedit.pendingFiles.forEach(pf => pf._preview && URL.revokeObjectURL(pf._preview));
+    pedit.pendingFiles = []; pedit.removedImages = [];
+    closeModal('productModal');
+    render();
+    openProductDetail(prod.id);
+    toast('保存しました', 'success');
+  } catch (e) {
+    console.error(e);
+    toast('保存失敗: ' + e.message, 'error');
+  } finally { showLoading(false); }
+}
+
+async function handleDeleteProduct() {
+  const id = document.getElementById('pId').value;
+  const p = productList().find(x => x.id === id);
+  if (!p) return;
+  const used = recordsForProduct(id).length;
+  if (used > 0) {
+    toast(`この商品は ${used} 件の検査結果で使われています。先に検査結果の商品を変更または削除してください`, 'error');
+    return;
+  }
+  if (!confirm(`「${p.name}」を削除します。よろしいですか?`)) return;
+  showLoading(true, '削除中...');
+  try {
+    for (const im of (p.images || [])) { await deleteImage(im); }
+    state.products = state.products.filter(x => x.id !== id);
+    await saveData(`delete product: ${p.name}`);
+    closeModal('productModal');
+    render();
+    toast('削除しました', 'success');
+  } catch (e) {
+    console.error(e);
+    toast('削除失敗: ' + e.message, 'error');
+  } finally { showLoading(false); }
 }
 
 /* ==================== 検査の種類 (inspections) ==================== */
@@ -1664,6 +2071,7 @@ function renderInspections() {
   const wrap = document.getElementById('inspectionTableWrap');
   grid.style.display = 'none';
   document.getElementById('agencyTableWrap').style.display = 'none';
+  document.getElementById('productTableWrap').style.display = 'none';
   populateInspectionFilters();
   const all = inspectionList();
   const list = filteredInspections();
@@ -1841,12 +2249,12 @@ function openDetail(id) {
   const agencyCell = agObj
     ? `<span class="link-agency" onclick="openAgencyDetail('${agObj.id}')">${esc(agObj.name)} 🔎</span>`
     : esc(agencyNameOf(r) || '—');
-  document.getElementById('detailTitle').textContent = r.itemName || '(商品名なし)';
+  document.getElementById('detailTitle').textContent = productNameOf(r) || '(商品名なし)';
   document.getElementById('detailGrid').innerHTML = `
     <div class="detail-row"><span class="k">検査期間</span><span class="v">${fmtPeriod(r)}</span></div>
     <div class="detail-row"><span class="k">合否</span><span class="v"><span class="badge-result ${result}" style="position:static">${resultLabel(result)}</span></span></div>
-    <div class="detail-row"><span class="k">商品名</span><span class="v">${esc(r.itemName || '—')}</span></div>
-    <div class="detail-row"><span class="k">商品番号</span><span class="v" style="font-family:ui-monospace,monospace">${esc(r.itemNumber || '—')}</span></div>
+    <div class="detail-row"><span class="k">商品名</span><span class="v">${r.productId && productOf(r) ? `<span class="link-agency" onclick="openProductDetail('${escAttr(r.productId)}')">${esc(productNameOf(r))} 🔎</span>` : esc(productNameOf(r) || '—')}</span></div>
+    <div class="detail-row"><span class="k">商品番号</span><span class="v" style="font-family:ui-monospace,monospace">${esc(productNumberOf(r) || '—')}</span></div>
     <div class="detail-row"><span class="k">検査機関</span><span class="v">${agencyCell}</span></div>
     <div class="detail-row"><span class="k">検査区分</span><span class="v">${esc(divisionNameOf(r) || '—')}</span></div>
     <div class="detail-row"><span class="k">検査分野</span><span class="v">${esc(fieldNameOf(r) || '—')}</span></div>
@@ -1947,6 +2355,40 @@ function populateItemSelect(selected) {
   sel.value = selected || '';
 }
 
+function populateProductSelect(selectedId) {
+  const sel = document.getElementById('fProduct');
+  const sorted = productList().slice().sort((a, b) => (a.name || '').localeCompare(b.name || '', 'ja'));
+  sel.innerHTML = ['<option value="">（未選択）</option>']
+    .concat(sorted.map(p => `<option value="${escAttr(p.id)}">${esc(p.name || '(名称なし)')}${p.number ? ' / ' + esc(p.number) : ''}</option>`)).join('');
+  sel.value = selectedId || '';
+}
+function showProductAdd(on) {
+  document.getElementById('productAddInline').style.display = on ? 'flex' : 'none';
+  document.getElementById('btnAddProductInline').style.display = on ? 'none' : 'inline-block';
+  if (on) {
+    const i = document.getElementById('fNewProductName');
+    i.value = ''; document.getElementById('fNewProductNumber').value = ''; i.focus();
+  }
+}
+// 検査結果の編集画面から商品を新規作成(保存時にGitHubへ記録)
+function confirmAddProduct() {
+  const name = document.getElementById('fNewProductName').value.trim();
+  if (!name) { toast('商品名を入力してください', 'error'); return; }
+  const number = document.getElementById('fNewProductNumber').value.trim();
+  if (!Array.isArray(state.products)) state.products = [];
+  const dup = state.products.find(p => (p.name || '').trim() === name && (p.number || '').trim() === number);
+  if (dup) { toast('同じ商品が既にあります', 'error'); populateProductSelect(dup.id); showProductAdd(false); return; }
+  const prod = {
+    id: 'prd_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8),
+    name, number, images: [], note: '',
+    createdAt: new Date().toISOString(), updatedAt: new Date().toISOString()
+  };
+  state.products.push(prod);
+  populateProductSelect(prod.id);
+  showProductAdd(false);
+  toast(`商品「${name}」を追加しました（検査結果を保存すると記録されます）`, 'success');
+}
+
 function openEdit(id) {
   const isNew = !id;
   edit = { id: id || ('rec_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6)),
@@ -1957,8 +2399,8 @@ function openEdit(id) {
   document.getElementById('btnDeleteRecord').style.display = isNew ? 'none' : 'inline-block';
 
   if (isNew) {
-    document.getElementById('fName').value = '';
-    document.getElementById('fNumber').value = '';
+    populateProductSelect('');
+    showProductAdd(false);
     document.querySelector('input[name="fResult"][value="progress"]').checked = true;
     document.getElementById('fStart').value = todayStr();
     document.getElementById('fEnd').value = '';
@@ -1971,8 +2413,8 @@ function openEdit(id) {
     populateItemSelect('');
   } else {
     const r = state.records.find(x => x.id === id) || {};
-    document.getElementById('fName').value = r.itemName || '';
-    document.getElementById('fNumber').value = r.itemNumber || '';
+    populateProductSelect(r.productId || '');
+    showProductAdd(false);
     const rv = r.result || 'pass';
     document.querySelector(`input[name="fResult"][value="${rv}"]`).checked = true;
     document.getElementById('fStart').value = (r.inspectStart || r.inspectedAt || '').slice(0, 10);
@@ -2127,9 +2569,11 @@ function addPendingFiles(files) {
 }
 
 async function handleSaveRecord() {
-  const name = document.getElementById('fName').value.trim();
-  const number = document.getElementById('fNumber').value.trim();
-  if (!name && !number) { toast('商品名または商品番号を入力してください', 'error'); return; }
+  const productId = document.getElementById('fProduct').value;
+  const prod = productList().find(x => x.id === productId);
+  if (!prod) { toast('商品を選択してください（無い場合は「＋ 新規」から追加できます）', 'error'); return; }
+  const name = prod.name || '';
+  const number = prod.number || '';
   if (!auth.owner || !auth.repo) { toast('先に⚙️設定でGitHub保存先を登録してください', 'error'); openSettings(); return; }
   if (!auth.pat) { toast('保存にはPAT(トークン)が必要です。⚙️設定から登録してください', 'error'); openSettings(); return; }
 
@@ -2145,7 +2589,8 @@ async function handleSaveRecord() {
   const insRow = findInspectionRow(divisionName, fieldName, itemName);
   const rec = {
     id: edit.id,
-    itemName: name,
+    productId,
+    itemName: name,   // 表示用の控え(商品マスタが正)
     itemNumber: number,
     result,
     agencyId: agencyId || '',
@@ -2330,11 +2775,13 @@ async function reloadFromGitHub() {
     const loaded = await loadRecords();
     state = {
       records: loaded.records, agencies: loaded.agencies || [], categories: loaded.categories || [],
-      inspections: loaded.inspections || [], flow: loaded.flow || '', sha: loaded.sha,
+      inspections: loaded.inspections || [], products: loaded.products || [], flow: loaded.flow || '', sha: loaded.sha,
       _loadFailed: !!loaded._loadFailed, _wasEmpty: !!loaded._wasEmpty
     };
     // 旧「検査分類」を「検査の種類」マスタへ取り込む(検査区分は空欄のまま)
     if (!state._loadFailed && !state._wasEmpty) {
+      const np = migrateRecordsToProducts();
+      if (np > 0) toast(`既存の検査結果から商品マスタを${np}件つくりました`, 'success');
       const n = migrateCategoriesToInspections();
       if (n > 0) toast(`旧「検査分類」${n}件を「検査の種類」の検査分野として取り込みました（検査区分は未設定です）`, 'success');
     }
@@ -2394,6 +2841,7 @@ function closeModal(id) { document.getElementById(id).style.display = 'none'; }
 function closeModalById(id) {
   if (id === 'editModal') return closeEditModal();
   if (id === 'agencyModal') return closeAgencyModal();
+  if (id === 'productModal') return closeProductModal();
   closeModal(id);
 }
 function goHome() {
@@ -2439,6 +2887,18 @@ function init() {
   document.getElementById('btnSaveRecord').onclick = handleSaveRecord;
   document.getElementById('btnDeleteRecord').onclick = handleDeleteRecord;
   document.getElementById('btnAddAgency').onclick = () => openAgencyEdit(null);
+  document.getElementById('btnAddProduct').onclick = () => openProductEdit(null);
+  document.getElementById('btnSaveProduct').onclick = handleSaveProduct;
+  document.getElementById('btnDeleteProduct').onclick = handleDeleteProduct;
+  document.getElementById('btnAddProductInline').onclick = () => showProductAdd(true);
+  document.getElementById('btnCancelProduct').onclick = () => showProductAdd(false);
+  document.getElementById('btnConfirmProduct').onclick = confirmAddProduct;
+  document.getElementById('fNewProductNumber').addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); confirmAddProduct(); }
+  });
+  document.getElementById('fNewProductName').addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); confirmAddProduct(); }
+  });
   document.getElementById('btnAddInspection').onclick = () => openInspectionEdit(null);
   document.getElementById('btnSaveInspection').onclick = handleSaveInspection;
   document.getElementById('btnDeleteInspection').onclick = handleDeleteInspection;
@@ -2450,6 +2910,7 @@ function init() {
   document.getElementById('searchInput').addEventListener('input', e => { searchText = e.target.value; render(); });
   document.getElementById('agencySearch').addEventListener('input', e => { agencySearchText = e.target.value; render(); });
   document.getElementById('inspectionSearch').addEventListener('input', e => { inspectionSearchText = e.target.value; render(); });
+  document.getElementById('productSearch').addEventListener('input', e => { productSearchText = e.target.value; render(); });
   document.getElementById('divisionFilter').addEventListener('change', e => { filterDivision = e.target.value; if (currentTab === 'inspections') render(); });
   document.getElementById('fieldFilter').addEventListener('change', e => { filterField = e.target.value; if (currentTab === 'inspections') render(); });
   document.querySelectorAll('#resultFilter button').forEach(b => { b.onclick = () => setFilter(b.dataset.result); });
@@ -2489,19 +2950,31 @@ function init() {
     if (e.dataTransfer.files.length) addPendingFiles(e.dataTransfer.files);
   });
 
+  // 商品画像 dropzone
+  const pdz = document.getElementById('pImgDropzone');
+  const pfi = document.getElementById('pImages');
+  pdz.onclick = () => pfi.click();
+  pfi.onchange = () => { if (pfi.files.length) addProductPendingFiles(pfi.files); pfi.value = ''; };
+  pdz.addEventListener('dragover', e => { e.preventDefault(); pdz.classList.add('dragover'); });
+  pdz.addEventListener('dragleave', () => pdz.classList.remove('dragover'));
+  pdz.addEventListener('drop', e => {
+    e.preventDefault(); pdz.classList.remove('dragover');
+    if (e.dataTransfer.files.length) addProductPendingFiles(e.dataTransfer.files);
+  });
+
   // Escで最前面のモーダル/ライトボックスを閉じる
   document.addEventListener('keydown', e => {
     if (e.key !== 'Escape') return;
     const lb = document.getElementById('lightbox');
     if (lb.classList.contains('open')) { closeLightbox(); return; }
     // 最前面のモーダルだけ閉じる (重なり順を考慮)
-    const order = ['inspectionModal', 'agencyModal', 'settingsModal', 'editModal', 'agencyDetailModal', 'detailModal'];
+    const order = ['productModal', 'inspectionModal', 'agencyModal', 'settingsModal', 'editModal', 'agencyDetailModal', 'productDetailModal', 'detailModal'];
     for (const id of order) {
       if (document.getElementById(id).style.display === 'flex') { closeModalById(id); break; }
     }
   });
   // backdrop は「ダブルクリック」で閉じる (誤操作防止)
-  ['editModal', 'detailModal', 'agencyDetailModal', 'agencyModal', 'settingsModal', 'inspectionModal'].forEach(id => {
+  ['editModal', 'detailModal', 'agencyDetailModal', 'agencyModal', 'settingsModal', 'inspectionModal', 'productModal', 'productDetailModal'].forEach(id => {
     const el = document.getElementById(id);
     el.addEventListener('dblclick', e => { if (e.target === el) closeModalById(id); });
   });
@@ -2518,6 +2991,11 @@ window.openDetail = openDetail;
 window.openAgencyEdit = openAgencyEdit;
 window.openAgencyDetail = openAgencyDetail;
 window.openInspectionEdit = openInspectionEdit;
+window.openProductEdit = openProductEdit;
+window.openProductDetail = openProductDetail;
+window.closeProductModal = closeProductModal;
+window.removeProductExistingImage = removeProductExistingImage;
+window.removeProductPendingImage = removeProductPendingImage;
 window.jumpToResult = jumpToResult;
 window.closeModal = closeModal;
 window.closeEditModal = closeEditModal;
