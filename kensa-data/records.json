@@ -286,12 +286,12 @@
   "inspections": [
     {
       "id": "ins_mig_xrl664lp",
-      "division": "",
+      "division": "訴求目的検査",
       "field": "有害物質",
       "item": "",
       "note": "",
       "createdAt": "2026-08-05T08:04:55.205Z",
-      "updatedAt": "2026-08-05T08:04:55.205Z"
+      "updatedAt": "2026-08-05T08:05:27.594Z"
     },
     {
       "id": "ins_mig_j77dlain",
