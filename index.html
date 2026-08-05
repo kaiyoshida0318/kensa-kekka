@@ -581,7 +581,7 @@ body {
   <div class="header-spacer"></div>
   <div class="header-actions">
     <span class="conn-pill off" id="connPill">未接続</span>
-    <span class="app-version" id="appVersion">v1.14.0</span>
+    <span class="app-version" id="appVersion">v1.15.0</span>
     <button class="btn-icon" id="btnReload" title="GitHubから再読み込み">🔄 更新</button>
     <button class="btn-icon" id="btnSettings" title="設定">⚙️ 設定</button>
   </div>
@@ -590,8 +590,8 @@ body {
 <!-- ============ Tabs ============ -->
 <div class="tab-bar">
   <button class="tab-btn active" data-tab="results" id="tabResults">📋 検査結果 <span class="cnt" id="tabResultsCnt"></span></button>
+  <button class="tab-btn" data-tab="inspections" id="tabInspections">🔬 検査の種類 <span class="cnt" id="tabInspectionsCnt"></span></button>
   <button class="tab-btn" data-tab="agencies" id="tabAgencies">🏢 検査機関 <span class="cnt" id="tabAgenciesCnt"></span></button>
-  <button class="tab-btn" data-tab="inspections" id="tabInspections">🔬 実施した検査 <span class="cnt" id="tabInspectionsCnt"></span></button>
   <button class="tab-btn" data-tab="flow" id="tabFlow">📖 検査の基本的な流れ</button>
 </div>
 
@@ -647,7 +647,7 @@ body {
   </div>
   <div class="toolbar-spacer"></div>
   <span class="result-count" id="inspectionCount"></span>
-  <button class="btn-add" id="btnAddInspection">＋ 実施した検査を追加</button>
+  <button class="btn-add" id="btnAddInspection">＋ 検査の種類を追加</button>
 </div>
 
 <!-- ============ Content ============ -->
@@ -732,7 +732,7 @@ body {
         <div class="form-row">
           <label>検査区分</label>
           <select id="fDivision"><option value="">（未選択）</option></select>
-          <small class="form-hint">「実施した検査」タブに登録した区分から選べます</small>
+          <small class="form-hint">「検査の種類」タブに登録した区分から選べます</small>
         </div>
       </div>
       <div class="form-2col">
@@ -744,7 +744,7 @@ body {
         <div class="form-row">
           <label>検査項目</label>
           <select id="fItem"><option value="">（未選択）</option></select>
-          <small class="form-hint">組み合わせの登録・編集は「実施した検査」タブで行います</small>
+          <small class="form-hint">組み合わせの登録・編集は「検査の種類」タブで行います</small>
         </div>
       </div>
       <div class="form-2col">
@@ -849,7 +849,7 @@ body {
 <div class="modal-backdrop" id="inspectionModal" style="display:none">
   <div class="modal">
     <div class="modal-header">
-      <h2 id="inspectionModalTitle">実施した検査を追加</h2>
+      <h2 id="inspectionModalTitle">検査の種類を追加</h2>
       <button class="btn-close" onclick="closeModal('inspectionModal')">×</button>
     </div>
     <div class="modal-body">
@@ -880,6 +880,11 @@ body {
       <div class="form-row">
         <label>メモ</label>
         <textarea id="insNote" placeholder="規格・基準値・注意点など"></textarea>
+      </div>
+      <div class="form-row" id="insLinkedWrap">
+        <label>検査商品 <span id="insLinkedCount" style="color:var(--text-light);font-weight:400"></span></label>
+        <div class="pchip-wrap" id="insLinked"></div>
+        <small class="form-hint">この検査を選んでいる検査結果です。クリックすると検査結果を開けます。</small>
       </div>
       <div class="modal-actions">
         <button class="btn-danger" id="btnDeleteInspection" style="margin-right:auto;display:none">🗑️ この検査を削除</button>
@@ -943,14 +948,14 @@ body {
 'use strict';
 
 /* ======================================================================
-   検査結果保存くん — v1.14.0
+   検査結果保存くん — v1.15.0
    データ保存: GitHub (Contents API)
      - データ:   kensa-data/records.json  { version, records[], agencies[], categories[], flow }
      - 画像:     kensa-data/images/{recordId}/{filename}      (サムネイル1枚)
      - 書類:     kensa-data/files/{recordId}/{slot}/{filename} (4種)
    ====================================================================== */
 
-const APP_VERSION = 'v1.14.0';
+const APP_VERSION = 'v1.15.0';
 const LS_AUTH = 'kensa_auth';
 const DATA_PATH = 'kensa-data/records.json';
 
@@ -1284,7 +1289,7 @@ function masterFields(division) {
     .sort((a, b) => a.localeCompare(b, 'ja'));
 }
 
-// 旧「検査分類」マスタを「実施した検査」マスタへ取り込む(冪等)
+// 旧「検査分類」マスタを「検査の種類」マスタへ取り込む(冪等)
 function migrateCategoriesToInspections() {
   if (!Array.isArray(state.inspections)) state.inspections = [];
   const names = new Set(inspectionList().map(x => (x.field || '').trim()).filter(Boolean));
@@ -1356,17 +1361,19 @@ function productChipHtml(r, mode) {
     : `jumpToResult('${r.id}')`;
   return `<button class="pchip" title="${escAttr(name)}" onclick="${handler}"><span class="pchip-dot ${result}"></span><span class="pchip-txt">${esc(name)}</span></button>`;
 }
-function renderProductChips(records, mode, agId, limit) {
+function renderProductChips(records, mode, agId, limit, moreOnclick) {
   if (!records.length) return '<span class="pchip-empty">—</span>';
   const shown = (limit && records.length > limit) ? records.slice(0, limit) : records;
   let html = shown.map(r => productChipHtml(r, mode)).join('');
   if (limit && records.length > limit) {
     const more = records.length - limit;
-    html += `<button class="pchip pchip-more" onclick="event.stopPropagation();openAgencyDetail('${agId}')">＋${more}件</button>`;
+    const handler = moreOnclick || `openAgencyDetail('${agId}')`;
+    html += `<button class="pchip pchip-more" onclick="event.stopPropagation();${handler}">＋${more}件</button>`;
   }
   return html;
 }
 function jumpToResult(id) {
+  closeModal('inspectionModal');
   closeModal('agencyModal');
   closeModal('agencyDetailModal');
   closeModal('detailModal');
@@ -1575,10 +1582,23 @@ function renderAgencies() {
     </table>`;
 }
 
-/* ==================== 実施した検査 (inspections) ==================== */
+/* ==================== 検査の種類 (inspections) ==================== */
 function inspectionList() { return Array.isArray(state.inspections) ? state.inspections : []; }
 
-// この機関にひも付く「実施した検査」
+// この検査の種類を使っている検査結果
+function recordsForInspection(x) {
+  if (!x) return [];
+  const d = (x.division || '').trim(), f = (x.field || '').trim(), it = (x.item || '').trim();
+  return state.records
+    .filter(r => r.inspectionId === x.id ||
+      ((divisionNameOf(r) || '').trim() === d &&
+       (fieldNameOf(r) || '').trim() === f &&
+       (itemOf(r) || '').trim() === it && (d || f || it)))
+    .sort((a, b) => ((b.inspectStart || b.inspectedAt || '') + (b.createdAt || ''))
+      .localeCompare((a.inspectStart || a.inspectedAt || '') + (a.createdAt || '')));
+}
+
+// この機関にひも付く「検査の種類」
 function inspectionsForAgency(agId) {
   return inspectionList().filter(x => x.agencyId === agId);
 }
@@ -1660,9 +1680,9 @@ function renderInspections() {
     } else {
       empty.innerHTML = `
         <div class="empty-icon">🔬</div>
-        <div class="empty-title">まだ実施した検査がありません</div>
-        <div class="empty-desc">右上の「＋ 実施した検査を追加」から登録してください。</div>
-        <button class="btn-primary" onclick="openInspectionEdit(null)">＋ 実施した検査を追加</button>`;
+        <div class="empty-title">まだ検査の種類がありません</div>
+        <div class="empty-desc">右上の「＋ 検査の種類を追加」から登録してください。</div>
+        <button class="btn-primary" onclick="openInspectionEdit(null)">＋ 検査の種類を追加</button>`;
     }
     return;
   }
@@ -1705,6 +1725,7 @@ function renderInspections() {
         ${i === 0 ? `<td class="col-name field-cell" rowspan="${fg.rows.length}">${fg.field ? esc(fg.field) : '<span class="muted">—</span>'}<span class="field-cnt">${fg.rows.length}件</span></td>` : ''}
         <td class="cell-pre">${x.item ? esc(x.item) : '<span class="muted">—</span>'}</td>
         <td>${x.agencyId && agencyNameById(x.agencyId) ? `<span class="link-agency" onclick="event.stopPropagation();openAgencyDetail('${escAttr(x.agencyId)}')">${esc(agencyNameById(x.agencyId))} 🔎</span>` : '<span class="muted">—</span>'}</td>
+        <td><div class="pchip-wrap">${renderProductChips(recordsForInspection(x), 'table', '', 3, `openInspectionEdit('${x.id}')`)}</div></td>
         <td class="cell-pre">${x.note ? esc(x.note) : '<span class="muted">—</span>'}</td>
         <td class="tbl-actions"><button class="btn-icon" onclick="event.stopPropagation();openInspectionEdit('${x.id}')">✏️ 編集</button></td>
       </tr>`).join('')).join('');
@@ -1713,11 +1734,12 @@ function renderInspections() {
       <table class="tbl tbl-grouped">
         <thead>
           <tr>
-            <th style="width:20%">検査分野</th>
-            <th style="width:30%">検査項目</th>
-            <th style="width:20%">検査機関</th>
-            <th style="width:18%">メモ</th>
-            <th style="width:12%"></th>
+            <th style="width:14%">検査分野</th>
+            <th style="width:20%">検査項目</th>
+            <th style="width:16%">検査機関</th>
+            <th style="width:26%">検査商品</th>
+            <th style="width:14%">メモ</th>
+            <th style="width:10%"></th>
           </tr>
         </thead>
         <tbody>${body}</tbody>
@@ -1738,7 +1760,7 @@ function openInspectionEdit(id) {
   const isNew = !id;
   const x = isNew ? {} : (inspectionList().find(v => v.id === id) || {});
   populateInspectionFilters(); // datalistを最新に
-  document.getElementById('inspectionModalTitle').textContent = isNew ? '実施した検査を追加' : '実施した検査を編集';
+  document.getElementById('inspectionModalTitle').textContent = isNew ? '検査の種類を追加' : '検査の種類を編集';
   document.getElementById('insId').value = id || '';
   document.getElementById('insDivision').value = x.division || '';
   document.getElementById('insField').value = x.field || '';
@@ -1746,6 +1768,12 @@ function openInspectionEdit(id) {
   populateInsAgencySelect(x.agencyId || '');
   document.getElementById('insNote').value = x.note || '';
   document.getElementById('btnDeleteInspection').style.display = isNew ? 'none' : 'inline-block';
+  const recs = isNew ? [] : recordsForInspection(x);
+  document.getElementById('insLinkedWrap').style.display = isNew ? 'none' : '';
+  document.getElementById('insLinkedCount').textContent = recs.length ? `(${recs.length}件)` : '';
+  document.getElementById('insLinked').innerHTML = recs.length
+    ? renderProductChips(recs, 'modal')
+    : '<span class="pchip-empty">この検査を選んでいる検査結果はまだありません</span>';
   showModal('inspectionModal');
 }
 
@@ -2305,10 +2333,10 @@ async function reloadFromGitHub() {
       inspections: loaded.inspections || [], flow: loaded.flow || '', sha: loaded.sha,
       _loadFailed: !!loaded._loadFailed, _wasEmpty: !!loaded._wasEmpty
     };
-    // 旧「検査分類」を「実施した検査」マスタへ取り込む(検査区分は空欄のまま)
+    // 旧「検査分類」を「検査の種類」マスタへ取り込む(検査区分は空欄のまま)
     if (!state._loadFailed && !state._wasEmpty) {
       const n = migrateCategoriesToInspections();
-      if (n > 0) toast(`旧「検査分類」${n}件を「実施した検査」の検査分野として取り込みました（検査区分は未設定です）`, 'success');
+      if (n > 0) toast(`旧「検査分類」${n}件を「検査の種類」の検査分野として取り込みました（検査区分は未設定です）`, 'success');
     }
     render();
     if (!loaded._loadFailed) toast('読み込み完了', 'success');
