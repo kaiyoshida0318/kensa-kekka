@@ -482,6 +482,8 @@ body {
 .doc-btn.del { color: var(--fail); }
 .doc-pending { font-size: 9px; background: var(--warning-text); color: #fff; padding: 1px 6px; border-radius: 8px; margin-left: 4px; }
 
+.cell-pre { white-space: pre-wrap; }
+
 /* ===== Detail view ===== */
 .detail-grid { display: grid; grid-template-columns: 1fr; gap: 8px; }
 .detail-row { display: grid; grid-template-columns: 90px 1fr; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--border-light); font-size: 13px; }
@@ -563,7 +565,7 @@ body {
   <div class="header-spacer"></div>
   <div class="header-actions">
     <span class="conn-pill off" id="connPill">未接続</span>
-    <span class="app-version" id="appVersion">v1.9.3</span>
+    <span class="app-version" id="appVersion">v1.10.0</span>
     <button class="btn-icon" id="btnReload" title="GitHubから再読み込み">🔄 更新</button>
     <button class="btn-icon" id="btnSettings" title="設定">⚙️ 設定</button>
   </div>
@@ -573,6 +575,7 @@ body {
 <div class="tab-bar">
   <button class="tab-btn active" data-tab="results" id="tabResults">📋 検査結果 <span class="cnt" id="tabResultsCnt"></span></button>
   <button class="tab-btn" data-tab="agencies" id="tabAgencies">🏢 検査機関 <span class="cnt" id="tabAgenciesCnt"></span></button>
+  <button class="tab-btn" data-tab="inspections" id="tabInspections">🔬 実施した検査 <span class="cnt" id="tabInspectionsCnt"></span></button>
   <button class="tab-btn" data-tab="flow" id="tabFlow">📖 検査の基本的な流れ</button>
 </div>
 
@@ -609,10 +612,30 @@ body {
   <button class="btn-add" id="btnAddAgency">＋ 検査機関を追加</button>
 </div>
 
+<!-- ============ Toolbar: inspections ============ -->
+<div class="toolbar" id="toolbarInspections" style="display:none">
+  <div class="search-box">
+    <span class="search-icon">🔍</span>
+    <input type="text" id="inspectionSearch" placeholder="検査区分・検査分野・検査項目で検索...">
+  </div>
+  <div class="filter-group">
+    <label class="filter-label">検査区分</label>
+    <select id="divisionFilter" class="filter-select"><option value="all">すべて</option></select>
+  </div>
+  <div class="filter-group">
+    <label class="filter-label">検査分野</label>
+    <select id="fieldFilter" class="filter-select"><option value="all">すべて</option></select>
+  </div>
+  <div class="toolbar-spacer"></div>
+  <span class="result-count" id="inspectionCount"></span>
+  <button class="btn-add" id="btnAddInspection">＋ 実施した検査を追加</button>
+</div>
+
 <!-- ============ Content ============ -->
 <main class="content">
   <div class="grid" id="grid"></div>
   <div id="agencyTableWrap" style="display:none"></div>
+  <div id="inspectionTableWrap" style="display:none"></div>
   <div id="flowPanel" style="display:none">
     <div class="flow-panel-bar">
       <div class="flow-panel-actions" id="flowViewActions">
@@ -807,6 +830,43 @@ body {
   </div>
 </div>
 
+<!-- ============ Inspection Edit Modal ============ -->
+<div class="modal-backdrop" id="inspectionModal" style="display:none">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="inspectionModalTitle">実施した検査を追加</h2>
+      <button class="btn-close" onclick="closeModal('inspectionModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="insId">
+      <div class="form-row">
+        <label>検査区分 <span style="color:var(--fail)">*</span></label>
+        <input type="text" id="insDivision" list="insDivisionList" placeholder="例: 法定検査 / 自主検査">
+        <datalist id="insDivisionList"></datalist>
+        <small class="form-hint">過去に入力した区分は候補として表示されます</small>
+      </div>
+      <div class="form-row">
+        <label>検査分野</label>
+        <input type="text" id="insField" list="insFieldList" placeholder="例: 化学 / 物理 / 微生物">
+        <datalist id="insFieldList"></datalist>
+      </div>
+      <div class="form-row">
+        <label>検査項目</label>
+        <textarea id="insItem" placeholder="例: 鉛・カドミウム溶出試験&#10;複数行で書けます" style="min-height:110px"></textarea>
+      </div>
+      <div class="form-row">
+        <label>メモ</label>
+        <textarea id="insNote" placeholder="規格・基準値・注意点など"></textarea>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-danger" id="btnDeleteInspection" style="margin-right:auto;display:none">🗑️ この検査を削除</button>
+        <button class="btn-secondary" onclick="closeModal('inspectionModal')">キャンセル</button>
+        <button class="btn-primary" id="btnSaveInspection">保存</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ============ Category Manage Modal ============ -->
 <div class="modal-backdrop" id="categoryManageModal" style="display:none">
   <div class="modal">
@@ -881,14 +941,14 @@ body {
 'use strict';
 
 /* ======================================================================
-   検査結果保存くん — v1.9.3
+   検査結果保存くん — v1.10.0
    データ保存: GitHub (Contents API)
      - データ:   kensa-data/records.json  { version, records[], agencies[], categories[], flow }
      - 画像:     kensa-data/images/{recordId}/{filename}      (サムネイル1枚)
      - 書類:     kensa-data/files/{recordId}/{slot}/{filename} (4種)
    ====================================================================== */
 
-const APP_VERSION = 'v1.9.3';
+const APP_VERSION = 'v1.10.0';
 const LS_AUTH = 'kensa_auth';
 const DATA_PATH = 'kensa-data/records.json';
 
@@ -903,12 +963,15 @@ const DOC_ACCEPT = '.pdf,.xlsx,.xls,.xlsm,.csv,image/*';
 
 // ----- state -----
 let auth = { pat: '', owner: '', repo: '', branch: 'main' };
-let state = { records: [], agencies: [], categories: [], flow: '', sha: null, _loadFailed: false, _wasEmpty: false };
+let state = { records: [], agencies: [], categories: [], inspections: [], flow: '', sha: null, _loadFailed: false, _wasEmpty: false };
 let currentTab = 'results';
 let filterResult = 'all';
 let filterCategory = 'all';
 let searchText = '';
 let agencySearchText = '';
+let inspectionSearchText = '';
+let filterDivision = 'all';
+let filterField = 'all';
 
 // 検査結果編集モーダルの作業用
 let edit = { id: null, existingImages: [], removedImages: [], pendingFiles: [],
@@ -980,6 +1043,7 @@ async function loadRecords() {
       records: Array.isArray(json.records) ? json.records : [],
       agencies: Array.isArray(json.agencies) ? json.agencies : [],
       categories: Array.isArray(json.categories) ? json.categories : [],
+      inspections: Array.isArray(json.inspections) ? json.inspections : [],
       flow: typeof json.flow === 'string' ? json.flow : '',
       sha: data.sha
     };
@@ -994,7 +1058,7 @@ async function saveData(message, retryCount = 0) {
   if (state._loadFailed || state._wasEmpty) {
     throw new Error('データの読み込みに失敗しているため、上書き保存を中止しました。「🔄更新」で再読み込みしてください。');
   }
-  const content = JSON.stringify({ version: APP_VERSION, records: state.records, agencies: state.agencies, categories: state.categories || [], flow: state.flow || '' }, null, 2);
+  const content = JSON.stringify({ version: APP_VERSION, records: state.records, agencies: state.agencies, categories: state.categories || [], inspections: state.inspections || [], flow: state.flow || '' }, null, 2);
   const body = { message: message || 'update data', content: b64encode(content), branch: auth.branch };
   if (state.sha) body.sha = state.sha;
   const res = await ghFetch(`contents/${DATA_PATH}`, { method: 'PUT', body: JSON.stringify(body) });
@@ -1247,9 +1311,11 @@ function jumpToResult(id) {
 function render() {
   document.getElementById('tabResultsCnt').textContent = state.records.length;
   document.getElementById('tabAgenciesCnt').textContent = state.agencies.length;
+  document.getElementById('tabInspectionsCnt').textContent = (state.inspections || []).length;
   document.getElementById('flowPanel').style.display = (currentTab === 'flow') ? 'block' : 'none';
   if (currentTab === 'results') renderResults();
   else if (currentTab === 'agencies') renderAgencies();
+  else if (currentTab === 'inspections') renderInspections();
   else renderFlowPanel();
 }
 
@@ -1258,6 +1324,7 @@ function setTab(t) {
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === t));
   document.getElementById('toolbarResults').style.display = (t === 'results') ? '' : 'none';
   document.getElementById('toolbarAgencies').style.display = (t === 'agencies') ? '' : 'none';
+  document.getElementById('toolbarInspections').style.display = (t === 'inspections') ? '' : 'none';
   if (t === 'flow') flowSetMode('view');
   render();
 }
@@ -1265,6 +1332,7 @@ function setTab(t) {
 function renderFlowPanel() {
   document.getElementById('grid').style.display = 'none';
   document.getElementById('agencyTableWrap').style.display = 'none';
+  document.getElementById('inspectionTableWrap').style.display = 'none';
   document.getElementById('emptyState').style.display = 'none';
   renderFlowView();
 }
@@ -1299,6 +1367,7 @@ function renderResults() {
   const empty = document.getElementById('emptyState');
   const agWrap = document.getElementById('agencyTableWrap');
   agWrap.style.display = 'none';
+  document.getElementById('inspectionTableWrap').style.display = 'none';
   populateCategoryFilter();
   const list = filteredRecords();
 
@@ -1381,6 +1450,7 @@ function renderAgencies() {
   const empty = document.getElementById('emptyState');
   const wrap = document.getElementById('agencyTableWrap');
   grid.style.display = 'none';
+  document.getElementById('inspectionTableWrap').style.display = 'none';
   const list = filteredAgencies();
 
   document.getElementById('agencyCount').textContent = `${list.length} / ${state.agencies.length} 件`;
@@ -1432,6 +1502,175 @@ function renderAgencies() {
           </tr>`).join('')}
       </tbody>
     </table>`;
+}
+
+/* ==================== 実施した検査 (inspections) ==================== */
+function inspectionList() { return Array.isArray(state.inspections) ? state.inspections : []; }
+
+function populateInspectionFilters() {
+  const divs = [...new Set(inspectionList().map(x => (x.division || '').trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'ja'));
+  const flds = [...new Set(inspectionList().map(x => (x.field || '').trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'ja'));
+  if (filterDivision !== 'all' && !divs.includes(filterDivision)) filterDivision = 'all';
+  if (filterField !== 'all' && !flds.includes(filterField)) filterField = 'all';
+  const dSel = document.getElementById('divisionFilter');
+  dSel.innerHTML = ['<option value="all">すべて</option>'].concat(divs.map(d => `<option value="${escAttr(d)}">${esc(d)}</option>`)).join('');
+  dSel.value = filterDivision;
+  const fSel = document.getElementById('fieldFilter');
+  fSel.innerHTML = ['<option value="all">すべて</option>'].concat(flds.map(f => `<option value="${escAttr(f)}">${esc(f)}</option>`)).join('');
+  fSel.value = filterField;
+  // 入力補助(datalist)
+  document.getElementById('insDivisionList').innerHTML = divs.map(d => `<option value="${escAttr(d)}">`).join('');
+  document.getElementById('insFieldList').innerHTML = flds.map(f => `<option value="${escAttr(f)}">`).join('');
+}
+
+function filteredInspections() {
+  const q = inspectionSearchText.trim().toLowerCase();
+  let list = inspectionList().slice();
+  if (filterDivision !== 'all') list = list.filter(x => (x.division || '').trim() === filterDivision);
+  if (filterField !== 'all') list = list.filter(x => (x.field || '').trim() === filterField);
+  if (q) {
+    list = list.filter(x =>
+      (x.division || '').toLowerCase().includes(q) ||
+      (x.field || '').toLowerCase().includes(q) ||
+      (x.item || '').toLowerCase().includes(q) ||
+      (x.note || '').toLowerCase().includes(q)
+    );
+  }
+  list.sort((a, b) =>
+    (a.division || '').localeCompare(b.division || '', 'ja') ||
+    (a.field || '').localeCompare(b.field || '', 'ja') ||
+    (a.item || '').localeCompare(b.item || '', 'ja'));
+  return list;
+}
+
+function renderInspections() {
+  const grid = document.getElementById('grid');
+  const empty = document.getElementById('emptyState');
+  const wrap = document.getElementById('inspectionTableWrap');
+  grid.style.display = 'none';
+  document.getElementById('agencyTableWrap').style.display = 'none';
+  populateInspectionFilters();
+  const all = inspectionList();
+  const list = filteredInspections();
+  document.getElementById('inspectionCount').textContent = `${list.length} / ${all.length} 件`;
+
+  if (all.length === 0) {
+    wrap.style.display = 'none'; empty.style.display = 'block';
+    if (!auth.owner || !auth.repo) {
+      empty.innerHTML = `
+        <div class="empty-icon">⚙️</div>
+        <div class="empty-title">まずGitHub保存先を設定してください</div>
+        <div class="empty-desc">右上の ⚙️設定 から owner / repo / PAT を登録すると使えます。</div>
+        <button class="btn-primary" onclick="openSettings()">⚙️ 設定を開く</button>`;
+    } else {
+      empty.innerHTML = `
+        <div class="empty-icon">🔬</div>
+        <div class="empty-title">まだ実施した検査がありません</div>
+        <div class="empty-desc">右上の「＋ 実施した検査を追加」から登録してください。</div>
+        <button class="btn-primary" onclick="openInspectionEdit(null)">＋ 実施した検査を追加</button>`;
+    }
+    return;
+  }
+  if (list.length === 0) {
+    wrap.style.display = 'none'; empty.style.display = 'block';
+    empty.innerHTML = `
+      <div class="empty-icon">🔍</div>
+      <div class="empty-title">条件に一致する検査がありません</div>
+      <div class="empty-desc">検索キーワードや絞り込みを変えてみてください。</div>`;
+    return;
+  }
+
+  empty.style.display = 'none'; wrap.style.display = 'block';
+  wrap.innerHTML = `
+    <table class="tbl">
+      <thead>
+        <tr>
+          <th style="width:18%">検査区分</th>
+          <th style="width:18%">検査分野</th>
+          <th style="width:34%">検査項目</th>
+          <th style="width:18%">メモ</th>
+          <th style="width:12%"></th>
+        </tr>
+      </thead>
+      <tbody>
+        ${list.map(x => `
+          <tr onclick="openInspectionEdit('${x.id}')">
+            <td class="col-name">${x.division ? esc(x.division) : '<span class="muted">—</span>'}</td>
+            <td>${x.field ? esc(x.field) : '<span class="muted">—</span>'}</td>
+            <td class="cell-pre">${x.item ? esc(x.item) : '<span class="muted">—</span>'}</td>
+            <td class="cell-pre">${x.note ? esc(x.note) : '<span class="muted">—</span>'}</td>
+            <td class="tbl-actions"><button class="btn-icon" onclick="event.stopPropagation();openInspectionEdit('${x.id}')">✏️ 編集</button></td>
+          </tr>`).join('')}
+      </tbody>
+    </table>`;
+}
+
+function openInspectionEdit(id) {
+  const isNew = !id;
+  const x = isNew ? {} : (inspectionList().find(v => v.id === id) || {});
+  populateInspectionFilters(); // datalistを最新に
+  document.getElementById('inspectionModalTitle').textContent = isNew ? '実施した検査を追加' : '実施した検査を編集';
+  document.getElementById('insId').value = id || '';
+  document.getElementById('insDivision').value = x.division || '';
+  document.getElementById('insField').value = x.field || '';
+  document.getElementById('insItem').value = x.item || '';
+  document.getElementById('insNote').value = x.note || '';
+  document.getElementById('btnDeleteInspection').style.display = isNew ? 'none' : 'inline-block';
+  showModal('inspectionModal');
+}
+
+async function handleSaveInspection() {
+  const division = document.getElementById('insDivision').value.trim();
+  if (!division) { toast('検査区分を入力してください', 'error'); return; }
+  if (!auth.owner || !auth.repo) { toast('先に⚙️設定でGitHub保存先を登録してください', 'error'); openSettings(); return; }
+  if (!auth.pat) { toast('保存にはPAT(トークン)が必要です。⚙️設定から登録してください', 'error'); openSettings(); return; }
+
+  if (!Array.isArray(state.inspections)) state.inspections = [];
+  const id = document.getElementById('insId').value || ('ins_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6));
+  const existing = state.inspections.find(v => v.id === id);
+  const ins = {
+    id, division,
+    field: document.getElementById('insField').value.trim(),
+    item: document.getElementById('insItem').value.trim(),
+    note: document.getElementById('insNote').value.trim(),
+    createdAt: (existing && existing.createdAt) || new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+  const prev = state.inspections.slice();
+  const idx = state.inspections.findIndex(v => v.id === id);
+  if (idx >= 0) state.inspections[idx] = ins; else state.inspections.push(ins);
+
+  showLoading(true, '保存中...');
+  try {
+    await saveData(`save inspection: ${division}`);
+    closeModal('inspectionModal');
+    render();
+    toast('保存しました', 'success');
+  } catch (e) {
+    console.error(e);
+    state.inspections = prev;
+    toast('保存失敗: ' + e.message, 'error');
+  } finally { showLoading(false); }
+}
+
+async function handleDeleteInspection() {
+  const id = document.getElementById('insId').value;
+  const x = inspectionList().find(v => v.id === id);
+  if (!x) return;
+  if (!confirm(`「${x.division}${x.field ? ' / ' + x.field : ''}」を削除します。よろしいですか?`)) return;
+  const prev = state.inspections.slice();
+  state.inspections = state.inspections.filter(v => v.id !== id);
+  showLoading(true, '削除中...');
+  try {
+    await saveData(`delete inspection: ${x.division}`);
+    closeModal('inspectionModal');
+    render();
+    toast('削除しました', 'success');
+  } catch (e) {
+    console.error(e);
+    state.inspections = prev;
+    toast('削除失敗: ' + e.message, 'error');
+  } finally { showLoading(false); }
 }
 
 /* ==================== result detail ==================== */
@@ -2016,7 +2255,8 @@ async function reloadFromGitHub() {
   try {
     const loaded = await loadRecords();
     state = {
-      records: loaded.records, agencies: loaded.agencies || [], categories: loaded.categories || [], flow: loaded.flow || '', sha: loaded.sha,
+      records: loaded.records, agencies: loaded.agencies || [], categories: loaded.categories || [],
+      inspections: loaded.inspections || [], flow: loaded.flow || '', sha: loaded.sha,
       _loadFailed: !!loaded._loadFailed, _wasEmpty: !!loaded._wasEmpty
     };
     render();
@@ -2120,6 +2360,9 @@ function init() {
   document.getElementById('btnSaveRecord').onclick = handleSaveRecord;
   document.getElementById('btnDeleteRecord').onclick = handleDeleteRecord;
   document.getElementById('btnAddAgency').onclick = () => openAgencyEdit(null);
+  document.getElementById('btnAddInspection').onclick = () => openInspectionEdit(null);
+  document.getElementById('btnSaveInspection').onclick = handleSaveInspection;
+  document.getElementById('btnDeleteInspection').onclick = handleDeleteInspection;
   document.getElementById('btnSaveAgency').onclick = handleSaveAgency;
   document.getElementById('btnDeleteAgency').onclick = handleDeleteAgency;
 
@@ -2127,6 +2370,9 @@ function init() {
 
   document.getElementById('searchInput').addEventListener('input', e => { searchText = e.target.value; render(); });
   document.getElementById('agencySearch').addEventListener('input', e => { agencySearchText = e.target.value; render(); });
+  document.getElementById('inspectionSearch').addEventListener('input', e => { inspectionSearchText = e.target.value; render(); });
+  document.getElementById('divisionFilter').addEventListener('change', e => { filterDivision = e.target.value; if (currentTab === 'inspections') render(); });
+  document.getElementById('fieldFilter').addEventListener('change', e => { filterField = e.target.value; if (currentTab === 'inspections') render(); });
   document.querySelectorAll('#resultFilter button').forEach(b => { b.onclick = () => setFilter(b.dataset.result); });
   document.getElementById('categoryFilter').addEventListener('change', e => { filterCategory = e.target.value; if (currentTab === 'results') render(); });
 
@@ -2163,13 +2409,13 @@ function init() {
     const lb = document.getElementById('lightbox');
     if (lb.classList.contains('open')) { closeLightbox(); return; }
     // 最前面のモーダルだけ閉じる (重なり順を考慮)
-    const order = ['categoryManageModal', 'agencyModal', 'settingsModal', 'editModal', 'agencyDetailModal', 'detailModal'];
+    const order = ['categoryManageModal', 'inspectionModal', 'agencyModal', 'settingsModal', 'editModal', 'agencyDetailModal', 'detailModal'];
     for (const id of order) {
       if (document.getElementById(id).style.display === 'flex') { closeModalById(id); break; }
     }
   });
   // backdrop は「ダブルクリック」で閉じる (誤操作防止)
-  ['editModal', 'detailModal', 'agencyDetailModal', 'agencyModal', 'settingsModal', 'categoryManageModal'].forEach(id => {
+  ['editModal', 'detailModal', 'agencyDetailModal', 'agencyModal', 'settingsModal', 'categoryManageModal', 'inspectionModal'].forEach(id => {
     const el = document.getElementById(id);
     el.addEventListener('dblclick', e => { if (e.target === el) closeModalById(id); });
   });
@@ -2185,6 +2431,7 @@ window.openEdit = openEdit;
 window.openDetail = openDetail;
 window.openAgencyEdit = openAgencyEdit;
 window.openAgencyDetail = openAgencyDetail;
+window.openInspectionEdit = openInspectionEdit;
 window.jumpToResult = jumpToResult;
 window.closeModal = closeModal;
 window.closeEditModal = closeEditModal;
