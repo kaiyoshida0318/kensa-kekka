@@ -491,6 +491,10 @@ body {
 .ins-group-title.unset { color: var(--text-light); }
 .ins-group-title.unset::before { background: var(--border); }
 .ins-group-cnt { font-size: 11px; font-weight: 500; color: var(--text-light); background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 1px 8px; }
+.tbl-grouped td { vertical-align: top; }
+.tbl-grouped .field-cell { border-right: 1px solid var(--border-light); background: var(--bg); }
+.tbl-grouped .field-cnt { display: inline-block; margin-left: 8px; font-size: 10px; font-weight: 500; color: var(--text-light); background: var(--surface); border: 1px solid var(--border); border-radius: 9px; padding: 0 6px; vertical-align: middle; }
+.tbl-grouped tr.ins-sub td { border-top: 1px dashed var(--border-light); }
 .ins-group-empty { font-size: 12px; color: var(--text-light); padding: 10px 12px; border: 1px dashed var(--border); border-radius: var(--radius-sm); background: var(--bg); }
 
 /* ===== Detail view ===== */
@@ -574,7 +578,7 @@ body {
   <div class="header-spacer"></div>
   <div class="header-actions">
     <span class="conn-pill off" id="connPill">未接続</span>
-    <span class="app-version" id="appVersion">v1.12.0</span>
+    <span class="app-version" id="appVersion">v1.13.0</span>
     <button class="btn-icon" id="btnReload" title="GitHubから再読み込み">🔄 更新</button>
     <button class="btn-icon" id="btnSettings" title="設定">⚙️ 設定</button>
   </div>
@@ -731,20 +735,13 @@ body {
       <div class="form-2col">
         <div class="form-row">
           <label>検査分野</label>
-          <div class="cat-select-wrap">
-            <select id="fField"><option value="">（未選択）</option></select>
-            <button type="button" class="btn-cat-add" id="btnAddField">＋ 新規</button>
-          </div>
-          <div class="cat-add-inline" id="fieldAddInline" style="display:none">
-            <input type="text" id="fNewField" placeholder="新しい検査分野名">
-            <button type="button" class="btn-cat-confirm" id="btnConfirmField">追加</button>
-            <button type="button" class="btn-cat-cancel" id="btnCancelField" title="キャンセル">×</button>
-          </div>
+          <select id="fField"><option value="">（未選択）</option></select>
           <small class="form-hint">選択中の検査区分に属する分野が表示されます</small>
         </div>
         <div class="form-row">
           <label>検査項目</label>
-          <input type="text" id="fItem" placeholder="例: 鉛・カドミウム溶出試験">
+          <select id="fItem"><option value="">（未選択）</option></select>
+          <small class="form-hint">組み合わせの登録・編集は「実施した検査」タブで行います</small>
         </div>
       </div>
       <div class="form-2col">
@@ -941,14 +938,14 @@ body {
 'use strict';
 
 /* ======================================================================
-   検査結果保存くん — v1.12.0
+   検査結果保存くん — v1.13.0
    データ保存: GitHub (Contents API)
      - データ:   kensa-data/records.json  { version, records[], agencies[], categories[], flow }
      - 画像:     kensa-data/images/{recordId}/{filename}      (サムネイル1枚)
      - 書類:     kensa-data/files/{recordId}/{slot}/{filename} (4種)
    ====================================================================== */
 
-const APP_VERSION = 'v1.12.0';
+const APP_VERSION = 'v1.13.0';
 const LS_AUTH = 'kensa_auth';
 const DATA_PATH = 'kensa-data/records.json';
 
@@ -1261,6 +1258,21 @@ function masterDivisions() {
   const used = inspectionList().map(x => (x.division || '').trim()).filter(Boolean);
   return [...new Set(DIVISIONS.concat(used))];
 }
+function masterItems(division, field) {
+  const rows = inspectionList().filter(x =>
+    (!division || (x.division || '').trim() === division) &&
+    (!field || (x.field || '').trim() === field));
+  return [...new Set(rows.map(x => (x.item || '').trim()).filter(Boolean))]
+    .sort((a, b) => a.localeCompare(b, 'ja'));
+}
+// 区分・分野・項目の組み合わせに一致するマスタ行
+function findInspectionRow(division, field, item) {
+  return inspectionList().find(x =>
+    (x.division || '').trim() === (division || '').trim() &&
+    (x.field || '').trim() === (field || '').trim() &&
+    (x.item || '').trim() === (item || '').trim()) || null;
+}
+
 function masterFields(division) {
   const rows = inspectionList().filter(x => !division || (x.division || '').trim() === division);
   return [...new Set(rows.map(x => (x.field || '').trim()).filter(Boolean))]
@@ -1646,9 +1658,25 @@ function renderInspections() {
         <div class="ins-group-empty">この区分に登録された検査はまだありません。</div>
       </div>`;
     }
+    // 同じ検査分野はまとめて表示(分野セルを結合)
+    const byField = [];
+    g.rows.slice()
+      .sort((a, b) => (a.field || '').localeCompare(b.field || '', 'ja') || (a.item || '').localeCompare(b.item || '', 'ja'))
+      .forEach(x => {
+        const key = (x.field || '').trim();
+        const grp = byField.find(v => v.field === key);
+        if (grp) grp.rows.push(x); else byField.push({ field: key, rows: [x] });
+      });
+    const body = byField.map(fg => fg.rows.map((x, i) => `
+      <tr onclick="openInspectionEdit('${x.id}')"${i === 0 ? '' : ' class="ins-sub"'}>
+        ${i === 0 ? `<td class="col-name field-cell" rowspan="${fg.rows.length}">${fg.field ? esc(fg.field) : '<span class="muted">—</span>'}<span class="field-cnt">${fg.rows.length}件</span></td>` : ''}
+        <td class="cell-pre">${x.item ? esc(x.item) : '<span class="muted">—</span>'}</td>
+        <td class="cell-pre">${x.note ? esc(x.note) : '<span class="muted">—</span>'}</td>
+        <td class="tbl-actions"><button class="btn-icon" onclick="event.stopPropagation();openInspectionEdit('${x.id}')">✏️ 編集</button></td>
+      </tr>`).join('')).join('');
     return `<div class="ins-group">
       <div class="${cls}">${esc(label)} <span class="ins-group-cnt">${g.rows.length}件</span></div>
-      <table class="tbl">
+      <table class="tbl tbl-grouped">
         <thead>
           <tr>
             <th style="width:24%">検査分野</th>
@@ -1657,15 +1685,7 @@ function renderInspections() {
             <th style="width:12%"></th>
           </tr>
         </thead>
-        <tbody>
-          ${g.rows.map(x => `
-            <tr onclick="openInspectionEdit('${x.id}')">
-              <td class="col-name">${x.field ? esc(x.field) : '<span class="muted">—</span>'}</td>
-              <td class="cell-pre">${x.item ? esc(x.item) : '<span class="muted">—</span>'}</td>
-              <td class="cell-pre">${x.note ? esc(x.note) : '<span class="muted">—</span>'}</td>
-              <td class="tbl-actions"><button class="btn-icon" onclick="event.stopPropagation();openInspectionEdit('${x.id}')">✏️ 編集</button></td>
-            </tr>`).join('')}
-        </tbody>
+        <tbody>${body}</tbody>
       </table>
     </div>`;
   }).join('');
@@ -1828,31 +1848,15 @@ function populateFieldSelect(selected) {
   sel.value = selected || '';
 }
 
-function showFieldAdd(on) {
-  document.getElementById('fieldAddInline').style.display = on ? 'flex' : 'none';
-  document.getElementById('btnAddField').style.display = on ? 'none' : 'inline-block';
-  if (on) { const i = document.getElementById('fNewField'); i.value = ''; i.focus(); }
-}
-
-// 編集画面から検査分野を追加(= 実施した検査マスタへ1行足す)
-function confirmAddField() {
-  const name = document.getElementById('fNewField').value.trim();
-  if (!name) { toast('検査分野名を入力してください', 'error'); return; }
-  const division = document.getElementById('fDivision').value.trim();
-  if (!Array.isArray(state.inspections)) state.inspections = [];
-  const dup = state.inspections.some(x => (x.field || '').trim() === name && (x.division || '').trim() === division);
-  if (!dup) {
-    state.inspections.push({
-      id: 'ins_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
-      division, field: name, item: '', note: '',
-      createdAt: new Date().toISOString(), updatedAt: new Date().toISOString()
-    });
-    toast(`検査分野「${name}」を追加しました（検査結果を保存すると記録されます）`, 'success');
-  } else {
-    toast('同じ検査分野が既にあります', 'error');
-  }
-  populateFieldSelect(name);
-  showFieldAdd(false);
+function populateItemSelect(selected) {
+  const sel = document.getElementById('fItem');
+  const div = document.getElementById('fDivision').value;
+  const fld = document.getElementById('fField').value;
+  const items = masterItems(div, fld).slice();
+  if (selected && !items.includes(selected)) items.push(selected); // 旧データの値も残す
+  sel.innerHTML = ['<option value="">（未選択）</option>']
+    .concat(items.sort((a, b) => a.localeCompare(b, 'ja')).map(i => `<option value="${escAttr(i)}">${esc(i)}</option>`)).join('');
+  sel.value = selected || '';
 }
 
 function openEdit(id) {
@@ -1872,12 +1876,11 @@ function openEdit(id) {
     document.getElementById('fEnd').value = '';
     document.getElementById('fInspector').value = '';
     document.getElementById('fCost').value = '';
-    document.getElementById('fItem').value = '';
     document.getElementById('fNote').value = '';
     populateAgencySelect('');
     populateDivisionSelect('');
     populateFieldSelect('');
-    showFieldAdd(false);
+    populateItemSelect('');
   } else {
     const r = state.records.find(x => x.id === id) || {};
     document.getElementById('fName').value = r.itemName || '';
@@ -1888,12 +1891,11 @@ function openEdit(id) {
     document.getElementById('fEnd').value = (r.inspectEnd || '').slice(0, 10);
     document.getElementById('fInspector').value = r.inspector || '';
     document.getElementById('fCost').value = r.cost || '';
-    document.getElementById('fItem').value = itemOf(r);
     document.getElementById('fNote').value = r.note || '';
     populateAgencySelect(r.agencyId || '');
     populateDivisionSelect(divisionNameOf(r));
     populateFieldSelect(fieldNameOf(r));
-    showFieldAdd(false);
+    populateItemSelect(itemOf(r));
     edit.existingImages = (r.images || []).map(im => ({ ...im }));
     const d = r.docs || {};
     DOC_SLOTS.forEach(s => { if (d[s.key]) edit.docs[s.key] = { ...d[s.key] }; });
@@ -2051,6 +2053,8 @@ async function handleSaveRecord() {
   const ag = state.agencies.find(x => x.id === agencyId);
   const divisionName = document.getElementById('fDivision').value.trim();
   const fieldName = document.getElementById('fField').value.trim();
+  const itemName = document.getElementById('fItem').value.trim();
+  const insRow = findInspectionRow(divisionName, fieldName, itemName);
   const rec = {
     id: edit.id,
     itemName: name,
@@ -2060,7 +2064,8 @@ async function handleSaveRecord() {
     agencyName: ag ? ag.name : '',
     divisionName,
     fieldName,
-    item: document.getElementById('fItem').value.trim(),
+    item: itemName,
+    inspectionId: insRow ? insRow.id : '',
     cost: document.getElementById('fCost').value.trim(),
     inspectStart: start,
     inspectEnd: end,
@@ -2366,17 +2371,20 @@ function init() {
   document.getElementById('recFieldFilter').addEventListener('change', e => { filterRecField = e.target.value; if (currentTab === 'results') render(); });
 
   // 検査分類の新規追加(編集フォーム内)
-  document.getElementById('btnAddField').onclick = () => showFieldAdd(true);
-  document.getElementById('btnCancelField').onclick = () => showFieldAdd(false);
-  document.getElementById('btnConfirmField').onclick = confirmAddField;
-  document.getElementById('fNewField').addEventListener('keydown', e => {
-    if (e.key === 'Enter') { e.preventDefault(); confirmAddField(); }
-  });
-  // 検査区分を変えたら検査分野の候補を絞り込む
+  // 検査区分 → 検査分野 → 検査項目 の連動
   document.getElementById('fDivision').addEventListener('change', () => {
-    const cur = document.getElementById('fField').value;
-    const stillValid = masterFields(document.getElementById('fDivision').value).includes(cur);
-    populateFieldSelect(stillValid ? cur : '');
+    const div = document.getElementById('fDivision').value;
+    const curF = document.getElementById('fField').value;
+    populateFieldSelect(masterFields(div).includes(curF) ? curF : '');
+    const curI = document.getElementById('fItem').value;
+    const f = document.getElementById('fField').value;
+    populateItemSelect(masterItems(div, f).includes(curI) ? curI : '');
+  });
+  document.getElementById('fField').addEventListener('change', () => {
+    const div = document.getElementById('fDivision').value;
+    const f = document.getElementById('fField').value;
+    const curI = document.getElementById('fItem').value;
+    populateItemSelect(masterItems(div, f).includes(curI) ? curI : '');
   });
 
 
