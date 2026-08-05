@@ -301,6 +301,15 @@
       "note": "",
       "createdAt": "2026-08-05T08:04:55.205Z",
       "updatedAt": "2026-08-05T08:05:19.890Z"
+    },
+    {
+      "id": "ins_1785917446730_o6eq",
+      "division": "必要検査",
+      "field": "test",
+      "item": "test",
+      "note": "",
+      "createdAt": "2026-08-05T08:10:46.730Z",
+      "updatedAt": "2026-08-05T08:10:46.730Z"
     }
   ],
   "flow": "①どんな検査が良さそうかChatGPTに相談\n(本格的な検査を提案しがちだから最低限LPに載せられる検査を探してもらう)\nhttps://chatgpt.com/g/g-p-699d6049f8208191b61ff8bbd1d64e35/c/6a6851ad-f2a0-83ee-8e99-bae95851eb79"
