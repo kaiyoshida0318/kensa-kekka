@@ -8,10 +8,10 @@
       "result": "progress",
       "agencyId": "ag_1785293718614_xj45",
       "agencyName": "CRC食品環境衛生研究所",
-      "divisionName": "",
-      "fieldName": "",
-      "item": "",
-      "inspectionId": "",
+      "divisionName": "訴求目的検査",
+      "fieldName": "有害物質",
+      "item": "シリコン中のRoHS5元素含有有無",
+      "inspectionId": "ins_1785918050499_3hg3",
       "cost": "5,500円",
       "inspectStart": "2026-07-28",
       "inspectEnd": "",
@@ -66,7 +66,7 @@
         }
       },
       "createdAt": "2026-07-28T07:40:30.513Z",
-      "updatedAt": "2026-08-05T08:21:57.861Z"
+      "updatedAt": "2026-08-05T08:22:07.543Z"
     },
     {
       "id": "rec_1785402394577_3rm3",
