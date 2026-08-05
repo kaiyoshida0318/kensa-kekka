@@ -565,7 +565,7 @@ body {
   <div class="header-spacer"></div>
   <div class="header-actions">
     <span class="conn-pill off" id="connPill">未接続</span>
-    <span class="app-version" id="appVersion">v1.10.0</span>
+    <span class="app-version" id="appVersion">v1.11.0</span>
     <button class="btn-icon" id="btnReload" title="GitHubから再読み込み">🔄 更新</button>
     <button class="btn-icon" id="btnSettings" title="設定">⚙️ 設定</button>
   </div>
@@ -592,9 +592,12 @@ body {
     <button data-result="progress">⏳ 検査中</button>
   </div>
   <div class="filter-group">
-    <label class="filter-label">検査分類</label>
-    <select id="categoryFilter" class="filter-select"><option value="all">すべて</option></select>
-    <button type="button" class="btn-cat-manage" id="btnManageCategory" title="検査分類の管理（名前の変更・削除）">⚙</button>
+    <label class="filter-label">検査区分</label>
+    <select id="recDivisionFilter" class="filter-select"><option value="all">すべて</option></select>
+  </div>
+  <div class="filter-group">
+    <label class="filter-label">検査分野</label>
+    <select id="recFieldFilter" class="filter-select"><option value="all">すべて</option></select>
   </div>
   <div class="toolbar-spacer"></div>
   <span class="result-count" id="resultCount"></span>
@@ -711,22 +714,29 @@ body {
           <small class="form-hint">「検査機関」タブで登録した機関から選べます</small>
         </div>
         <div class="form-row">
-          <label>検査分類</label>
-          <div class="cat-select-wrap">
-            <select id="fCategory"><option value="">（未選択）</option></select>
-            <button type="button" class="btn-cat-add" id="btnAddCategory">＋ 新規</button>
-          </div>
-          <div class="cat-add-inline" id="catAddInline" style="display:none">
-            <input type="text" id="fNewCategory" placeholder="新しい検査分類名">
-            <button type="button" class="btn-cat-confirm" id="btnConfirmCategory">追加</button>
-            <button type="button" class="btn-cat-cancel" id="btnCancelCategory" title="キャンセル">×</button>
-          </div>
-          <small class="form-hint">選択肢にない分類は「＋ 新規」で追加できます</small>
+          <label>検査区分</label>
+          <select id="fDivision"><option value="">（未選択）</option></select>
+          <small class="form-hint">「実施した検査」タブに登録した区分から選べます</small>
         </div>
       </div>
-      <div class="form-row">
-        <label>検査内容</label>
-        <input type="text" id="fContent" placeholder="例: 耐久試験・成分分析 など">
+      <div class="form-2col">
+        <div class="form-row">
+          <label>検査分野</label>
+          <div class="cat-select-wrap">
+            <select id="fField"><option value="">（未選択）</option></select>
+            <button type="button" class="btn-cat-add" id="btnAddField">＋ 新規</button>
+          </div>
+          <div class="cat-add-inline" id="fieldAddInline" style="display:none">
+            <input type="text" id="fNewField" placeholder="新しい検査分野名">
+            <button type="button" class="btn-cat-confirm" id="btnConfirmField">追加</button>
+            <button type="button" class="btn-cat-cancel" id="btnCancelField" title="キャンセル">×</button>
+          </div>
+          <small class="form-hint">選択中の検査区分に属する分野が表示されます</small>
+        </div>
+        <div class="form-row">
+          <label>検査項目</label>
+          <input type="text" id="fItem" placeholder="例: 鉛・カドミウム溶出試験">
+        </div>
       </div>
       <div class="form-2col">
         <div class="form-row">
@@ -867,27 +877,6 @@ body {
   </div>
 </div>
 
-<!-- ============ Category Manage Modal ============ -->
-<div class="modal-backdrop" id="categoryManageModal" style="display:none">
-  <div class="modal">
-    <div class="modal-header">
-      <h2>🏷️ 検査分類の管理</h2>
-      <button class="btn-close" onclick="closeModal('categoryManageModal')">×</button>
-    </div>
-    <div class="modal-body">
-      <div id="catManageList"></div>
-      <div class="cat-add-inline" style="margin-top:14px">
-        <input type="text" id="catManageNew" placeholder="新しい検査分類名">
-        <button type="button" class="btn-cat-confirm" id="btnCatManageAdd">＋ 追加</button>
-      </div>
-      <small class="form-hint" style="margin-top:8px">名前を書き換えて「保存」でリネーム。削除しても、その分類を使っている検査結果側の記録（分類名）は残ります。</small>
-      <div class="modal-actions">
-        <button class="btn-secondary" onclick="closeModal('categoryManageModal')">閉じる</button>
-      </div>
-    </div>
-  </div>
-</div>
-
 <!-- ============ Settings Modal ============ -->
 <div class="modal-backdrop" id="settingsModal" style="display:none">
   <div class="modal">
@@ -941,14 +930,14 @@ body {
 'use strict';
 
 /* ======================================================================
-   検査結果保存くん — v1.10.0
+   検査結果保存くん — v1.11.0
    データ保存: GitHub (Contents API)
      - データ:   kensa-data/records.json  { version, records[], agencies[], categories[], flow }
      - 画像:     kensa-data/images/{recordId}/{filename}      (サムネイル1枚)
      - 書類:     kensa-data/files/{recordId}/{slot}/{filename} (4種)
    ====================================================================== */
 
-const APP_VERSION = 'v1.10.0';
+const APP_VERSION = 'v1.11.0';
 const LS_AUTH = 'kensa_auth';
 const DATA_PATH = 'kensa-data/records.json';
 
@@ -966,7 +955,8 @@ let auth = { pat: '', owner: '', repo: '', branch: 'main' };
 let state = { records: [], agencies: [], categories: [], inspections: [], flow: '', sha: null, _loadFailed: false, _wasEmpty: false };
 let currentTab = 'results';
 let filterResult = 'all';
-let filterCategory = 'all';
+let filterRecDivision = 'all';
+let filterRecField = 'all';
 let searchText = '';
 let agencySearchText = '';
 let inspectionSearchText = '';
@@ -1232,25 +1222,71 @@ async function downloadFile(url, filename) {
 }
 function openDocInTab(url) { window.open(url, '_blank', 'noopener'); }
 
-function categoryNameOf(r) {
+// ===== 検査区分 > 検査分野 > 検査項目 =====
+// 旧データ互換: categoryName -> field / content -> item
+function fieldNameOf(r) {
+  if (r.fieldName) return r.fieldName;
   if (r.categoryId) {
     const c = (state.categories || []).find(x => x.id === r.categoryId);
-    if (c) return c.name;
+    if (c) return c.name || '';
   }
   return r.categoryName || '';
 }
-function populateCategoryFilter() {
-  const sel = document.getElementById('categoryFilter');
-  if (!sel) return;
-  // 記録に実際に使われている分類 + 登録済みの分類名を集約
-  const used = state.records.map(r => categoryNameOf(r)).map(s => (s || '').trim()).filter(Boolean);
-  const registered = (state.categories || []).map(c => (c.name || '').trim()).filter(Boolean);
-  const names = [...new Set([...used, ...registered])].sort((a, b) => a.localeCompare(b, 'ja'));
-  if (filterCategory !== 'all' && !names.includes(filterCategory)) filterCategory = 'all';
-  sel.innerHTML = ['<option value="all">すべて</option>']
-    .concat(names.map(n => `<option value="${escAttr(n)}">${esc(n)}</option>`))
-    .join('');
-  sel.value = filterCategory;
+function divisionNameOf(r) {
+  if (r.divisionName) return r.divisionName;
+  // 未設定なら、分野からマスタを引いて区分を補完表示
+  const f = (fieldNameOf(r) || '').trim();
+  if (!f) return '';
+  const m = inspectionList().find(x => (x.field || '').trim() === f && (x.division || '').trim());
+  return m ? m.division : '';
+}
+function itemOf(r) { return r.item || r.content || ''; }
+
+// マスタ(実施した検査)から区分・分野の一覧を取り出す
+function masterDivisions() {
+  return [...new Set(inspectionList().map(x => (x.division || '').trim()).filter(Boolean))]
+    .sort((a, b) => a.localeCompare(b, 'ja'));
+}
+function masterFields(division) {
+  const rows = inspectionList().filter(x => !division || (x.division || '').trim() === division);
+  return [...new Set(rows.map(x => (x.field || '').trim()).filter(Boolean))]
+    .sort((a, b) => a.localeCompare(b, 'ja'));
+}
+
+// 旧「検査分類」マスタを「実施した検査」マスタへ取り込む(冪等)
+function migrateCategoriesToInspections() {
+  if (!Array.isArray(state.inspections)) state.inspections = [];
+  const names = new Set(inspectionList().map(x => (x.field || '').trim()).filter(Boolean));
+  let added = 0;
+  const seeds = [];
+  (state.categories || []).forEach(c => { if (c && c.name) seeds.push(c.name.trim()); });
+  state.records.forEach(r => { const f = (fieldNameOf(r) || '').trim(); if (f) seeds.push(f); });
+  seeds.forEach(name => {
+    if (!name || names.has(name)) return;
+    names.add(name);
+    state.inspections.push({
+      id: 'ins_mig_' + Math.random().toString(36).slice(2, 10),
+      division: '', field: name, item: '', note: '',
+      createdAt: new Date().toISOString(), updatedAt: new Date().toISOString()
+    });
+    added++;
+  });
+  return added;
+}
+
+function populateRecordFilters() {
+  const divs = [...new Set(state.records.map(r => (divisionNameOf(r) || '').trim()).filter(Boolean).concat(masterDivisions()))]
+    .sort((a, b) => a.localeCompare(b, 'ja'));
+  const flds = [...new Set(state.records.map(r => (fieldNameOf(r) || '').trim()).filter(Boolean).concat(masterFields('')))]
+    .sort((a, b) => a.localeCompare(b, 'ja'));
+  if (filterRecDivision !== 'all' && !divs.includes(filterRecDivision)) filterRecDivision = 'all';
+  if (filterRecField !== 'all' && !flds.includes(filterRecField)) filterRecField = 'all';
+  const dS = document.getElementById('recDivisionFilter');
+  dS.innerHTML = ['<option value="all">すべて</option>'].concat(divs.map(d => `<option value="${escAttr(d)}">${esc(d)}</option>`)).join('');
+  dS.value = filterRecDivision;
+  const fS = document.getElementById('recFieldFilter');
+  fS.innerHTML = ['<option value="all">すべて</option>'].concat(flds.map(f => `<option value="${escAttr(f)}">${esc(f)}</option>`)).join('');
+  fS.value = filterRecField;
 }
 function resultLabel(result) {
   if (result === 'fail') return '不合格';
@@ -1342,15 +1378,17 @@ function filteredRecords() {
   const q = searchText.trim().toLowerCase();
   let list = state.records.slice();
   if (filterResult !== 'all') list = list.filter(r => (r.result || 'pass') === filterResult);
-  if (filterCategory !== 'all') list = list.filter(r => (categoryNameOf(r) || '').trim() === filterCategory);
+  if (filterRecDivision !== 'all') list = list.filter(r => (divisionNameOf(r) || '').trim() === filterRecDivision);
+  if (filterRecField !== 'all') list = list.filter(r => (fieldNameOf(r) || '').trim() === filterRecField);
   if (q) {
     list = list.filter(r =>
       (r.itemName || '').toLowerCase().includes(q) ||
       (r.itemNumber || '').toLowerCase().includes(q) ||
       (r.inspector || '').toLowerCase().includes(q) ||
       (agencyNameOf(r) || '').toLowerCase().includes(q) ||
-      (categoryNameOf(r) || '').toLowerCase().includes(q) ||
-      (r.content || '').toLowerCase().includes(q) ||
+      (divisionNameOf(r) || '').toLowerCase().includes(q) ||
+      (fieldNameOf(r) || '').toLowerCase().includes(q) ||
+      (itemOf(r) || '').toLowerCase().includes(q) ||
       (r.note || '').toLowerCase().includes(q)
     );
   }
@@ -1368,7 +1406,7 @@ function renderResults() {
   const agWrap = document.getElementById('agencyTableWrap');
   agWrap.style.display = 'none';
   document.getElementById('inspectionTableWrap').style.display = 'none';
-  populateCategoryFilter();
+  populateRecordFilters();
   const list = filteredRecords();
 
   document.getElementById('resultCount').textContent = `${list.length} / ${state.records.length} 件`;
@@ -1689,8 +1727,9 @@ function openDetail(id) {
     <div class="detail-row"><span class="k">商品名</span><span class="v">${esc(r.itemName || '—')}</span></div>
     <div class="detail-row"><span class="k">商品番号</span><span class="v" style="font-family:ui-monospace,monospace">${esc(r.itemNumber || '—')}</span></div>
     <div class="detail-row"><span class="k">検査機関</span><span class="v">${agencyCell}</span></div>
-    <div class="detail-row"><span class="k">検査分類</span><span class="v">${esc(categoryNameOf(r) || '—')}</span></div>
-    <div class="detail-row"><span class="k">検査内容</span><span class="v" style="white-space:pre-wrap">${esc(r.content || '—')}</span></div>
+    <div class="detail-row"><span class="k">検査区分</span><span class="v">${esc(divisionNameOf(r) || '—')}</span></div>
+    <div class="detail-row"><span class="k">検査分野</span><span class="v">${esc(fieldNameOf(r) || '—')}</span></div>
+    <div class="detail-row"><span class="k">検査項目</span><span class="v" style="white-space:pre-wrap">${esc(itemOf(r) || '—')}</span></div>
     <div class="detail-row"><span class="k">検査費用</span><span class="v">${esc(r.cost || '—')}</span></div>
     <div class="detail-row"><span class="k">検査者</span><span class="v">${esc(r.inspector || '—')}</span></div>
     <div class="detail-row"><span class="k">メモ</span><span class="v" style="white-space:pre-wrap">${esc(r.note || '—')}</span></div>
@@ -1741,137 +1780,51 @@ function populateAgencySelect(selectedId) {
   sel.value = selectedId || '';
 }
 
-function populateCategorySelect(selectedId) {
-  const sel = document.getElementById('fCategory');
-  const sorted = (state.categories || []).slice().sort((a, b) => (a.name || '').localeCompare(b.name || '', 'ja'));
+/* ---- 検査区分 / 検査分野 の連動セレクト ---- */
+function populateDivisionSelect(selected) {
+  const sel = document.getElementById('fDivision');
+  const divs = masterDivisions().slice();
+  if (selected && !divs.includes(selected)) divs.push(selected); // 旧データの値も残す
   sel.innerHTML = ['<option value="">（未選択）</option>']
-    .concat(sorted.map(c => `<option value="${escAttr(c.id)}">${esc(c.name || '(名称なし)')}</option>`))
-    .join('');
-  sel.value = selectedId || '';
+    .concat(divs.sort((a, b) => a.localeCompare(b, 'ja')).map(d => `<option value="${escAttr(d)}">${esc(d)}</option>`)).join('');
+  sel.value = selected || '';
 }
 
-function showCatAdd(on) {
-  document.getElementById('catAddInline').style.display = on ? 'flex' : 'none';
-  document.getElementById('btnAddCategory').style.display = on ? 'none' : 'inline-block';
-  if (on) { const i = document.getElementById('fNewCategory'); i.value = ''; i.focus(); }
+function populateFieldSelect(selected) {
+  const sel = document.getElementById('fField');
+  const div = document.getElementById('fDivision').value;
+  const flds = masterFields(div).slice();
+  if (selected && !flds.includes(selected)) flds.push(selected);
+  sel.innerHTML = ['<option value="">（未選択）</option>']
+    .concat(flds.sort((a, b) => a.localeCompare(b, 'ja')).map(f => `<option value="${escAttr(f)}">${esc(f)}</option>`)).join('');
+  sel.value = selected || '';
 }
 
-function confirmAddCategory() {
-  const name = document.getElementById('fNewCategory').value.trim();
-  if (!name) { toast('検査分類名を入力してください', 'error'); return; }
-  let c = (state.categories || []).find(x => (x.name || '').trim() === name);
-  if (!c) {
-    c = { id: 'cat_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6), name };
-    if (!Array.isArray(state.categories)) state.categories = [];
-    state.categories.push(c);
-    toast(`検査分類「${name}」を追加しました（検査結果を保存するとGitHubにも記録されます）`, 'success');
+function showFieldAdd(on) {
+  document.getElementById('fieldAddInline').style.display = on ? 'flex' : 'none';
+  document.getElementById('btnAddField').style.display = on ? 'none' : 'inline-block';
+  if (on) { const i = document.getElementById('fNewField'); i.value = ''; i.focus(); }
+}
+
+// 編集画面から検査分野を追加(= 実施した検査マスタへ1行足す)
+function confirmAddField() {
+  const name = document.getElementById('fNewField').value.trim();
+  if (!name) { toast('検査分野名を入力してください', 'error'); return; }
+  const division = document.getElementById('fDivision').value.trim();
+  if (!Array.isArray(state.inspections)) state.inspections = [];
+  const dup = state.inspections.some(x => (x.field || '').trim() === name && (x.division || '').trim() === division);
+  if (!dup) {
+    state.inspections.push({
+      id: 'ins_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+      division, field: name, item: '', note: '',
+      createdAt: new Date().toISOString(), updatedAt: new Date().toISOString()
+    });
+    toast(`検査分野「${name}」を追加しました（検査結果を保存すると記録されます）`, 'success');
   } else {
-    toast('同じ名前の検査分類が既にあります', 'error');
+    toast('同じ検査分野が既にあります', 'error');
   }
-  populateCategorySelect(c.id);
-  showCatAdd(false);
-}
-
-/* ---- 検査分類の管理(リネーム/削除) ---- */
-function recordsUsingCategory(id) {
-  return state.records.filter(r => r.categoryId === id).length;
-}
-
-function openCategoryManage() {
-  renderCatManage();
-  document.getElementById('catManageNew').value = '';
-  showModal('categoryManageModal');
-}
-
-function renderCatManage() {
-  const wrap = document.getElementById('catManageList');
-  const cats = (state.categories || []).slice().sort((a, b) => (a.name || '').localeCompare(b.name || '', 'ja'));
-  if (!cats.length) {
-    wrap.innerHTML = '<div class="cat-manage-empty">まだ検査分類がありません。下の入力欄から追加できます。</div>';
-    return;
-  }
-  wrap.innerHTML = cats.map(c => {
-    const n = recordsUsingCategory(c.id);
-    return `<div class="cat-manage-row">
-      <input type="text" value="${escAttr(c.name || '')}" data-id="${escAttr(c.id)}">
-      <span class="cat-manage-count">${n}件で使用</span>
-      <button type="button" class="cat-manage-save" onclick="renameCategory('${escAttr(c.id)}')">保存</button>
-      <button type="button" class="cat-manage-del" title="削除" onclick="deleteCategory('${escAttr(c.id)}')">🗑️</button>
-    </div>`;
-  }).join('');
-}
-
-function catAuthOk() {
-  if (!auth.owner || !auth.repo) { toast('先に⚙️設定でGitHub保存先を登録してください', 'error'); return false; }
-  if (!auth.pat) { toast('保存にはPAT(トークン)が必要です。⚙️設定から登録してください', 'error'); return false; }
-  return true;
-}
-
-async function addCategoryFromManage() {
-  const name = document.getElementById('catManageNew').value.trim();
-  if (!name) { toast('検査分類名を入力してください', 'error'); return; }
-  if ((state.categories || []).some(x => (x.name || '').trim() === name)) { toast('同じ名前の検査分類が既にあります', 'error'); return; }
-  if (!catAuthOk()) return;
-  if (!Array.isArray(state.categories)) state.categories = [];
-  state.categories.push({ id: 'cat_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6), name });
-  showLoading(true, '保存中...');
-  try {
-    await saveData(`add category: ${name}`);
-    document.getElementById('catManageNew').value = '';
-    renderCatManage(); render();
-    toast('追加しました', 'success');
-  } catch (e) { console.error(e); toast('保存失敗: ' + e.message, 'error'); }
-  finally { showLoading(false); }
-}
-
-async function renameCategory(id) {
-  const input = document.querySelector(`#catManageList input[data-id="${id}"]`);
-  if (!input) return;
-  const newName = input.value.trim();
-  const c = (state.categories || []).find(x => x.id === id);
-  if (!c) return;
-  if (!newName) { toast('分類名を空にはできません', 'error'); input.value = c.name || ''; return; }
-  if (newName === c.name) { toast('変更がありません', 'error'); return; }
-  if ((state.categories || []).some(x => x.id !== id && (x.name || '').trim() === newName)) { toast('同じ名前の検査分類が既にあります', 'error'); return; }
-  if (!catAuthOk()) return;
-  const prev = c.name;
-  c.name = newName;
-  // 記録側の分類名(denormalized)も更新
-  state.records.forEach(r => { if (r.categoryId === id) r.categoryName = newName; });
-  if (filterCategory === prev) filterCategory = newName;
-  showLoading(true, '保存中...');
-  try {
-    await saveData(`rename category: ${prev} -> ${newName}`);
-    renderCatManage(); render();
-    toast('名前を変更しました', 'success');
-  } catch (e) {
-    console.error(e);
-    c.name = prev; state.records.forEach(r => { if (r.categoryId === id) r.categoryName = prev; });
-    toast('保存失敗: ' + e.message, 'error');
-  } finally { showLoading(false); }
-}
-
-async function deleteCategory(id) {
-  const c = (state.categories || []).find(x => x.id === id);
-  if (!c) return;
-  const n = recordsUsingCategory(id);
-  const msg = n > 0
-    ? `検査分類「${c.name}」を削除します。\n${n}件の検査結果で使用中ですが、各記録に保存された分類名は残ります(選択肢からのみ削除されます)。よろしいですか?`
-    : `検査分類「${c.name}」を削除します。よろしいですか?`;
-  if (!confirm(msg)) return;
-  if (!catAuthOk()) return;
-  const prevList = state.categories.slice();
-  state.categories = state.categories.filter(x => x.id !== id);
-  showLoading(true, '削除中...');
-  try {
-    await saveData(`delete category: ${c.name}`);
-    renderCatManage(); render();
-    toast('削除しました', 'success');
-  } catch (e) {
-    console.error(e);
-    state.categories = prevList;
-    toast('削除失敗: ' + e.message, 'error');
-  } finally { showLoading(false); }
+  populateFieldSelect(name);
+  showFieldAdd(false);
 }
 
 function openEdit(id) {
@@ -1891,11 +1844,12 @@ function openEdit(id) {
     document.getElementById('fEnd').value = '';
     document.getElementById('fInspector').value = '';
     document.getElementById('fCost').value = '';
-    document.getElementById('fContent').value = '';
+    document.getElementById('fItem').value = '';
     document.getElementById('fNote').value = '';
     populateAgencySelect('');
-    populateCategorySelect('');
-    showCatAdd(false);
+    populateDivisionSelect('');
+    populateFieldSelect('');
+    showFieldAdd(false);
   } else {
     const r = state.records.find(x => x.id === id) || {};
     document.getElementById('fName').value = r.itemName || '';
@@ -1906,11 +1860,12 @@ function openEdit(id) {
     document.getElementById('fEnd').value = (r.inspectEnd || '').slice(0, 10);
     document.getElementById('fInspector').value = r.inspector || '';
     document.getElementById('fCost').value = r.cost || '';
-    document.getElementById('fContent').value = r.content || '';
+    document.getElementById('fItem').value = itemOf(r);
     document.getElementById('fNote').value = r.note || '';
     populateAgencySelect(r.agencyId || '');
-    populateCategorySelect(r.categoryId || '');
-    showCatAdd(false);
+    populateDivisionSelect(divisionNameOf(r));
+    populateFieldSelect(fieldNameOf(r));
+    showFieldAdd(false);
     edit.existingImages = (r.images || []).map(im => ({ ...im }));
     const d = r.docs || {};
     DOC_SLOTS.forEach(s => { if (d[s.key]) edit.docs[s.key] = { ...d[s.key] }; });
@@ -2066,8 +2021,8 @@ async function handleSaveRecord() {
   if (start && end && end < start) { toast('検査期間の終了日は開始日以降にしてください', 'error'); return; }
   const agencyId = document.getElementById('fAgency').value;
   const ag = state.agencies.find(x => x.id === agencyId);
-  const categoryId = document.getElementById('fCategory').value;
-  const cat = (state.categories || []).find(x => x.id === categoryId);
+  const divisionName = document.getElementById('fDivision').value.trim();
+  const fieldName = document.getElementById('fField').value.trim();
   const rec = {
     id: edit.id,
     itemName: name,
@@ -2075,9 +2030,9 @@ async function handleSaveRecord() {
     result,
     agencyId: agencyId || '',
     agencyName: ag ? ag.name : '',
-    categoryId: categoryId || '',
-    categoryName: cat ? cat.name : '',
-    content: document.getElementById('fContent').value.trim(),
+    divisionName,
+    fieldName,
+    item: document.getElementById('fItem').value.trim(),
     cost: document.getElementById('fCost').value.trim(),
     inspectStart: start,
     inspectEnd: end,
@@ -2259,6 +2214,11 @@ async function reloadFromGitHub() {
       inspections: loaded.inspections || [], flow: loaded.flow || '', sha: loaded.sha,
       _loadFailed: !!loaded._loadFailed, _wasEmpty: !!loaded._wasEmpty
     };
+    // 旧「検査分類」を「実施した検査」マスタへ取り込む(検査区分は空欄のまま)
+    if (!state._loadFailed && !state._wasEmpty) {
+      const n = migrateCategoriesToInspections();
+      if (n > 0) toast(`旧「検査分類」${n}件を「実施した検査」の検査分野として取り込みました（検査区分は未設定です）`, 'success');
+    }
     render();
     if (!loaded._loadFailed) toast('読み込み完了', 'success');
   } catch (e) {
@@ -2374,22 +2334,23 @@ function init() {
   document.getElementById('divisionFilter').addEventListener('change', e => { filterDivision = e.target.value; if (currentTab === 'inspections') render(); });
   document.getElementById('fieldFilter').addEventListener('change', e => { filterField = e.target.value; if (currentTab === 'inspections') render(); });
   document.querySelectorAll('#resultFilter button').forEach(b => { b.onclick = () => setFilter(b.dataset.result); });
-  document.getElementById('categoryFilter').addEventListener('change', e => { filterCategory = e.target.value; if (currentTab === 'results') render(); });
+  document.getElementById('recDivisionFilter').addEventListener('change', e => { filterRecDivision = e.target.value; if (currentTab === 'results') render(); });
+  document.getElementById('recFieldFilter').addEventListener('change', e => { filterRecField = e.target.value; if (currentTab === 'results') render(); });
 
   // 検査分類の新規追加(編集フォーム内)
-  document.getElementById('btnAddCategory').onclick = () => showCatAdd(true);
-  document.getElementById('btnCancelCategory').onclick = () => showCatAdd(false);
-  document.getElementById('btnConfirmCategory').onclick = confirmAddCategory;
-  document.getElementById('fNewCategory').addEventListener('keydown', e => {
-    if (e.key === 'Enter') { e.preventDefault(); confirmAddCategory(); }
+  document.getElementById('btnAddField').onclick = () => showFieldAdd(true);
+  document.getElementById('btnCancelField').onclick = () => showFieldAdd(false);
+  document.getElementById('btnConfirmField').onclick = confirmAddField;
+  document.getElementById('fNewField').addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); confirmAddField(); }
+  });
+  // 検査区分を変えたら検査分野の候補を絞り込む
+  document.getElementById('fDivision').addEventListener('change', () => {
+    const cur = document.getElementById('fField').value;
+    const stillValid = masterFields(document.getElementById('fDivision').value).includes(cur);
+    populateFieldSelect(stillValid ? cur : '');
   });
 
-  // 検査分類の管理(リネーム/削除)
-  document.getElementById('btnManageCategory').onclick = openCategoryManage;
-  document.getElementById('btnCatManageAdd').onclick = addCategoryFromManage;
-  document.getElementById('catManageNew').addEventListener('keydown', e => {
-    if (e.key === 'Enter') { e.preventDefault(); addCategoryFromManage(); }
-  });
 
   // image dropzone
   const dz = document.getElementById('imgDropzone');
@@ -2409,13 +2370,13 @@ function init() {
     const lb = document.getElementById('lightbox');
     if (lb.classList.contains('open')) { closeLightbox(); return; }
     // 最前面のモーダルだけ閉じる (重なり順を考慮)
-    const order = ['categoryManageModal', 'inspectionModal', 'agencyModal', 'settingsModal', 'editModal', 'agencyDetailModal', 'detailModal'];
+    const order = ['inspectionModal', 'agencyModal', 'settingsModal', 'editModal', 'agencyDetailModal', 'detailModal'];
     for (const id of order) {
       if (document.getElementById(id).style.display === 'flex') { closeModalById(id); break; }
     }
   });
   // backdrop は「ダブルクリック」で閉じる (誤操作防止)
-  ['editModal', 'detailModal', 'agencyDetailModal', 'agencyModal', 'settingsModal', 'categoryManageModal', 'inspectionModal'].forEach(id => {
+  ['editModal', 'detailModal', 'agencyDetailModal', 'agencyModal', 'settingsModal', 'inspectionModal'].forEach(id => {
     const el = document.getElementById(id);
     el.addEventListener('dblclick', e => { if (e.target === el) closeModalById(id); });
   });
