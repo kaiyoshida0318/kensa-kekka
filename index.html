@@ -588,7 +588,7 @@ body {
   <div class="header-spacer"></div>
   <div class="header-actions">
     <span class="conn-pill off" id="connPill">未接続</span>
-    <span class="app-version" id="appVersion">v1.16.0</span>
+    <span class="app-version" id="appVersion">v1.16.1</span>
     <button class="btn-icon" id="btnReload" title="GitHubから再読み込み">🔄 更新</button>
     <button class="btn-icon" id="btnSettings" title="設定">⚙️ 設定</button>
   </div>
@@ -704,16 +704,6 @@ body {
     </div>
     <div class="modal-body">
       <input type="hidden" id="editId">
-      <div class="form-row">
-        <label>サムネイル画像（1枚）</label>
-        <div class="img-dropzone" id="imgDropzone">
-          <div class="img-dropzone-icon">📥</div>
-          <div class="img-dropzone-text">画像をドラッグ＆ドロップ、またはクリックして選択</div>
-          <div class="img-dropzone-hint">JPG / PNG / WebP / GIF ・ 1枚のみ</div>
-          <input type="file" id="fImages" accept="image/*" style="display:none">
-        </div>
-        <div class="img-grid" id="imgGrid"></div>
-      </div>
       <div class="form-2col">
         <div class="form-row">
           <label>検査期間</label>
@@ -1036,14 +1026,14 @@ body {
 'use strict';
 
 /* ======================================================================
-   検査結果保存くん — v1.16.0
+   検査結果保存くん — v1.16.1
    データ保存: GitHub (Contents API)
      - データ:   kensa-data/records.json  { version, records[], agencies[], categories[], flow }
      - 画像:     kensa-data/images/{recordId}/{filename}      (サムネイル1枚)
      - 書類:     kensa-data/files/{recordId}/{slot}/{filename} (4種)
    ====================================================================== */
 
-const APP_VERSION = 'v1.16.0';
+const APP_VERSION = 'v1.16.1';
 const LS_AUTH = 'kensa_auth';
 const DATA_PATH = 'kensa-data/records.json';
 
@@ -1074,8 +1064,7 @@ let filterDivision = 'all';
 let filterField = 'all';
 
 // 検査結果編集モーダルの作業用
-let edit = { id: null, existingImages: [], removedImages: [], pendingFiles: [],
-             docs: {}, pendingDocs: {}, removedDocs: [] };
+let edit = { id: null, docs: {}, pendingDocs: {}, removedDocs: [] };
 
 /* ==================== GitHub helpers ==================== */
 async function ghFetch(path, opts = {}) {
@@ -1573,14 +1562,13 @@ function renderResults() {
 
   empty.style.display = 'none'; grid.style.display = 'grid';
   grid.innerHTML = list.map(r => {
-    const imgs = r.images || [];
     const result = r.result || 'pass';
-    const first = imgs[0];
+    const first = thumbOf(r);
     const an = agencyNameOf(r);
     const imgHtml = first
       ? `<img src="${escAttr(first.url)}" alt="" loading="lazy">`
       : `<span class="no-img">🖼️</span>`;
-    const countBadge = imgs.length > 1 ? `<span class="card-img-count">🖼 ${imgs.length}</span>` : '';
+    const countBadge = '';
     return `
       <div class="card" onclick="openDetail('${r.id}')">
         <div class="card-img">
@@ -1685,6 +1673,13 @@ function productList() { return Array.isArray(state.products) ? state.products :
 function productOf(r) { return r.productId ? productList().find(p => p.id === r.productId) || null : null; }
 function productNameOf(r) { const p = productOf(r); return p ? (p.name || '') : (r.itemName || ''); }
 function productNumberOf(r) { const p = productOf(r); return p ? (p.number || '') : (r.itemNumber || ''); }
+// 検査結果のサムネは商品画像を使う(旧データが自前の画像を持つ場合はそれを予備に)
+function thumbOf(r) {
+  const p = productOf(r);
+  const pi = p && (p.images || [])[0];
+  if (pi) return pi;
+  return (r.images || [])[0] || null;
+}
 function recordsForProduct(pid) {
   return state.records.filter(r => r.productId === pid)
     .sort((a, b) => ((b.inspectStart || b.inspectedAt || '') + (b.createdAt || ''))
@@ -2263,9 +2258,9 @@ function openDetail(id) {
     <div class="detail-row"><span class="k">検査者</span><span class="v">${esc(r.inspector || '—')}</span></div>
     <div class="detail-row"><span class="k">メモ</span><span class="v" style="white-space:pre-wrap">${esc(r.note || '—')}</span></div>
   `;
-  const imgs = r.images || [];
-  document.getElementById('detailImgs').innerHTML = imgs.length
-    ? imgs.map(im => `<img src="${escAttr(im.url)}" alt="" loading="lazy" onclick="openLightbox('${escAttr(im.url)}')">`).join('')
+  const thumb = thumbOf(r);
+  document.getElementById('detailImgs').innerHTML = thumb
+    ? `<img src="${escAttr(thumb.url)}" alt="" loading="lazy" onclick="openLightbox('${escAttr(thumb.url)}')">`
     : '<div class="no-img-box"><span style="font-size:26px">🖼️</span><span>画像なし</span></div>';
   renderDetailDocs(r);
   document.getElementById('btnEditFromDetail').onclick = () => { closeModal('detailModal'); openEdit(id); };
@@ -2392,7 +2387,6 @@ function confirmAddProduct() {
 function openEdit(id) {
   const isNew = !id;
   edit = { id: id || ('rec_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6)),
-           existingImages: [], removedImages: [], pendingFiles: [],
            docs: {}, pendingDocs: {}, removedDocs: [] };
   document.getElementById('editTitle').textContent = isNew ? '検査結果を追加' : '検査結果を編集';
   document.getElementById('editId').value = edit.id;
@@ -2426,11 +2420,9 @@ function openEdit(id) {
     populateDivisionSelect(divisionNameOf(r));
     populateFieldSelect(fieldNameOf(r));
     populateItemSelect(itemOf(r));
-    edit.existingImages = (r.images || []).map(im => ({ ...im }));
     const d = r.docs || {};
     DOC_SLOTS.forEach(s => { if (d[s.key]) edit.docs[s.key] = { ...d[s.key] }; });
   }
-  renderEditImages();
   renderDocSlots();
   showModal('editModal');
 }
@@ -2520,52 +2512,8 @@ function clearDocSlot(slotKey) {
 // 編集を閉じる: 既存レコードなら詳細へ戻る / 新規なら閉じるだけ
 function closeEditModal() {
   const exists = state.records.some(x => x.id === edit.id);
-  edit.pendingFiles.forEach(pf => pf._preview && URL.revokeObjectURL(pf._preview));
   closeModal('editModal');
   if (exists) openDetail(edit.id);
-}
-
-function imageCount() { return edit.existingImages.length + edit.pendingFiles.length; }
-
-function renderEditImages() {
-  const grid = document.getElementById('imgGrid');
-  // 画像が1枚あるときはドロップエリアを隠す
-  document.getElementById('imgDropzone').style.display = imageCount() >= 1 ? 'none' : '';
-  const existing = edit.existingImages.map((im, i) => `
-    <div class="img-card">
-      <img class="thumb" src="${escAttr(im.url)}" alt="" onclick="openLightbox('${escAttr(im.url)}')">
-      <button class="rm" title="削除" onclick="removeExistingImage(${i})">×</button>
-    </div>`).join('');
-  const pending = edit.pendingFiles.map((pf, i) => `
-    <div class="img-card">
-      <img class="thumb" src="${pf._preview}" alt="">
-      <span class="pending-tag">未保存</span>
-      <button class="rm" title="取消" onclick="removePendingImage(${i})">×</button>
-    </div>`).join('');
-  grid.innerHTML = existing + pending;
-}
-
-function removeExistingImage(i) {
-  const im = edit.existingImages.splice(i, 1)[0];
-  if (im) edit.removedImages.push(im);
-  renderEditImages();
-}
-function removePendingImage(i) {
-  const pf = edit.pendingFiles.splice(i, 1)[0];
-  if (pf && pf._preview) URL.revokeObjectURL(pf._preview);
-  renderEditImages();
-}
-// サムネイル画像は1枚のみ。既にある場合は追加しない(先に削除してもらう)。
-function addPendingFiles(files) {
-  if (imageCount() >= 1) {
-    toast('サムネイル画像は1枚までです。今の画像を削除してから追加してください', 'error');
-    return;
-  }
-  const f = Array.from(files).find(x => x.type.startsWith('image/'));
-  if (!f) { toast('画像ファイルを選択してください', 'error'); return; }
-  f._preview = URL.createObjectURL(f);
-  edit.pendingFiles.push(f);
-  renderEditImages();
 }
 
 async function handleSaveRecord() {
@@ -2605,7 +2553,7 @@ async function handleSaveRecord() {
     inspectedAt: start,
     inspector: document.getElementById('fInspector').value.trim(),
     note: document.getElementById('fNote').value.trim(),
-    images: edit.existingImages.slice(),
+    images: ((state.records.find(x => x.id === edit.id) || {}).images || []).slice(), // 旧データの画像はそのまま保持
     docs: { ...edit.docs },
     createdAt: (state.records.find(x => x.id === edit.id) || {}).createdAt || new Date().toISOString(),
     updatedAt: new Date().toISOString()
@@ -2613,20 +2561,11 @@ async function handleSaveRecord() {
 
   showLoading(true, '保存中...');
   try {
-    for (let i = 0; i < edit.pendingFiles.length; i++) {
-      showLoading(true, `画像アップロード中... (${i + 1}/${edit.pendingFiles.length})`);
-      const meta = await uploadImage(edit.id, edit.pendingFiles[i]);
-      rec.images.push(meta);
-    }
     const pendingSlots = DOC_SLOTS.filter(s => edit.pendingDocs[s.key]);
     for (let i = 0; i < pendingSlots.length; i++) {
       const s = pendingSlots[i];
       showLoading(true, `書類アップロード中... ${s.label} (${i + 1}/${pendingSlots.length})`);
       rec.docs[s.key] = await uploadDoc(edit.id, s.key, edit.pendingDocs[s.key]);
-    }
-    for (const im of edit.removedImages) {
-      showLoading(true, '画像を削除中...');
-      await deleteImage(im);
     }
     for (const dm of edit.removedDocs) {
       showLoading(true, '書類を削除中...');
@@ -2638,9 +2577,7 @@ async function handleSaveRecord() {
     showLoading(true, 'データ保存中...');
     await saveData(`save record: ${rec.itemName || rec.itemNumber || rec.id}`);
 
-    edit.pendingFiles.forEach(pf => pf._preview && URL.revokeObjectURL(pf._preview));
-    edit.pendingFiles = [];
-    edit.pendingDocs = {}; edit.removedDocs = []; edit.removedImages = [];
+    edit.pendingDocs = {}; edit.removedDocs = [];
     closeModal('editModal');
     render();
     openDetail(rec.id); // 保存後は詳細へ
@@ -2938,18 +2875,6 @@ function init() {
   document.getElementById('fItem').addEventListener('change', autoSelectAgencyFromInspection);
 
 
-  // image dropzone
-  const dz = document.getElementById('imgDropzone');
-  const fi = document.getElementById('fImages');
-  dz.onclick = () => fi.click();
-  fi.onchange = () => { if (fi.files.length) addPendingFiles(fi.files); fi.value = ''; };
-  dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('dragover'); });
-  dz.addEventListener('dragleave', () => dz.classList.remove('dragover'));
-  dz.addEventListener('drop', e => {
-    e.preventDefault(); dz.classList.remove('dragover');
-    if (e.dataTransfer.files.length) addPendingFiles(e.dataTransfer.files);
-  });
-
   // 商品画像 dropzone
   const pdz = document.getElementById('pImgDropzone');
   const pfi = document.getElementById('pImages');
@@ -3002,8 +2927,6 @@ window.closeEditModal = closeEditModal;
 window.closeAgencyModal = closeAgencyModal;
 window.openLightbox = openLightbox;
 window.closeLightbox = closeLightbox;
-window.removeExistingImage = removeExistingImage;
-window.removePendingImage = removePendingImage;
 
 document.addEventListener('DOMContentLoaded', init);
 </script>
