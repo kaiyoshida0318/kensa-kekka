@@ -484,6 +484,15 @@ body {
 
 .cell-pre { white-space: pre-wrap; }
 
+/* 実施した検査: 検査区分ごとのグループ */
+.ins-group { margin-bottom: 26px; }
+.ins-group-title { font-size: 14px; font-weight: 700; color: var(--text); margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+.ins-group-title::before { content: ''; width: 4px; height: 16px; border-radius: 2px; background: var(--primary); }
+.ins-group-title.unset { color: var(--text-light); }
+.ins-group-title.unset::before { background: var(--border); }
+.ins-group-cnt { font-size: 11px; font-weight: 500; color: var(--text-light); background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 1px 8px; }
+.ins-group-empty { font-size: 12px; color: var(--text-light); padding: 10px 12px; border: 1px dashed var(--border); border-radius: var(--radius-sm); background: var(--bg); }
+
 /* ===== Detail view ===== */
 .detail-grid { display: grid; grid-template-columns: 1fr; gap: 8px; }
 .detail-row { display: grid; grid-template-columns: 90px 1fr; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--border-light); font-size: 13px; }
@@ -565,7 +574,7 @@ body {
   <div class="header-spacer"></div>
   <div class="header-actions">
     <span class="conn-pill off" id="connPill">未接続</span>
-    <span class="app-version" id="appVersion">v1.11.0</span>
+    <span class="app-version" id="appVersion">v1.12.0</span>
     <button class="btn-icon" id="btnReload" title="GitHubから再読み込み">🔄 更新</button>
     <button class="btn-icon" id="btnSettings" title="設定">⚙️ 設定</button>
   </div>
@@ -851,9 +860,11 @@ body {
       <input type="hidden" id="insId">
       <div class="form-row">
         <label>検査区分 <span style="color:var(--fail)">*</span></label>
-        <input type="text" id="insDivision" list="insDivisionList" placeholder="例: 法定検査 / 自主検査">
-        <datalist id="insDivisionList"></datalist>
-        <small class="form-hint">過去に入力した区分は候補として表示されます</small>
+        <select id="insDivision">
+          <option value="">（未選択）</option>
+          <option value="訴求目的検査">訴求目的検査</option>
+          <option value="必要検査">必要検査</option>
+        </select>
       </div>
       <div class="form-row">
         <label>検査分野</label>
@@ -930,14 +941,14 @@ body {
 'use strict';
 
 /* ======================================================================
-   検査結果保存くん — v1.11.0
+   検査結果保存くん — v1.12.0
    データ保存: GitHub (Contents API)
      - データ:   kensa-data/records.json  { version, records[], agencies[], categories[], flow }
      - 画像:     kensa-data/images/{recordId}/{filename}      (サムネイル1枚)
      - 書類:     kensa-data/files/{recordId}/{slot}/{filename} (4種)
    ====================================================================== */
 
-const APP_VERSION = 'v1.11.0';
+const APP_VERSION = 'v1.12.0';
 const LS_AUTH = 'kensa_auth';
 const DATA_PATH = 'kensa-data/records.json';
 
@@ -949,6 +960,9 @@ const DOC_SLOTS = [
   { key: 'report',      label: '検査結果',     icon: '📄' }
 ];
 const DOC_ACCEPT = '.pdf,.xlsx,.xls,.xlsm,.csv,image/*';
+
+// 検査区分は固定2種
+const DIVISIONS = ['訴求目的検査', '必要検査'];
 
 // ----- state -----
 let auth = { pat: '', owner: '', repo: '', branch: 'main' };
@@ -1244,8 +1258,8 @@ function itemOf(r) { return r.item || r.content || ''; }
 
 // マスタ(実施した検査)から区分・分野の一覧を取り出す
 function masterDivisions() {
-  return [...new Set(inspectionList().map(x => (x.division || '').trim()).filter(Boolean))]
-    .sort((a, b) => a.localeCompare(b, 'ja'));
+  const used = inspectionList().map(x => (x.division || '').trim()).filter(Boolean);
+  return [...new Set(DIVISIONS.concat(used))];
 }
 function masterFields(division) {
   const rows = inspectionList().filter(x => !division || (x.division || '').trim() === division);
@@ -1275,8 +1289,7 @@ function migrateCategoriesToInspections() {
 }
 
 function populateRecordFilters() {
-  const divs = [...new Set(state.records.map(r => (divisionNameOf(r) || '').trim()).filter(Boolean).concat(masterDivisions()))]
-    .sort((a, b) => a.localeCompare(b, 'ja'));
+  const divs = [...new Set(DIVISIONS.concat(state.records.map(r => (divisionNameOf(r) || '').trim()).filter(Boolean)))];
   const flds = [...new Set(state.records.map(r => (fieldNameOf(r) || '').trim()).filter(Boolean).concat(masterFields('')))]
     .sort((a, b) => a.localeCompare(b, 'ja'));
   if (filterRecDivision !== 'all' && !divs.includes(filterRecDivision)) filterRecDivision = 'all';
@@ -1546,7 +1559,7 @@ function renderAgencies() {
 function inspectionList() { return Array.isArray(state.inspections) ? state.inspections : []; }
 
 function populateInspectionFilters() {
-  const divs = [...new Set(inspectionList().map(x => (x.division || '').trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'ja'));
+  const divs = [...new Set(DIVISIONS.concat(inspectionList().map(x => (x.division || '').trim()).filter(Boolean)))];
   const flds = [...new Set(inspectionList().map(x => (x.field || '').trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'ja'));
   if (filterDivision !== 'all' && !divs.includes(filterDivision)) filterDivision = 'all';
   if (filterField !== 'all' && !flds.includes(filterField)) filterField = 'all';
@@ -1557,7 +1570,6 @@ function populateInspectionFilters() {
   fSel.innerHTML = ['<option value="all">すべて</option>'].concat(flds.map(f => `<option value="${escAttr(f)}">${esc(f)}</option>`)).join('');
   fSel.value = filterField;
   // 入力補助(datalist)
-  document.getElementById('insDivisionList').innerHTML = divs.map(d => `<option value="${escAttr(d)}">`).join('');
   document.getElementById('insFieldList').innerHTML = flds.map(f => `<option value="${escAttr(f)}">`).join('');
 }
 
@@ -1619,28 +1631,44 @@ function renderInspections() {
   }
 
   empty.style.display = 'none'; wrap.style.display = 'block';
-  wrap.innerHTML = `
-    <table class="tbl">
-      <thead>
-        <tr>
-          <th style="width:18%">検査区分</th>
-          <th style="width:18%">検査分野</th>
-          <th style="width:34%">検査項目</th>
-          <th style="width:18%">メモ</th>
-          <th style="width:12%"></th>
-        </tr>
-      </thead>
-      <tbody>
-        ${list.map(x => `
-          <tr onclick="openInspectionEdit('${x.id}')">
-            <td class="col-name">${x.division ? esc(x.division) : '<span class="muted">—</span>'}</td>
-            <td>${x.field ? esc(x.field) : '<span class="muted">—</span>'}</td>
-            <td class="cell-pre">${x.item ? esc(x.item) : '<span class="muted">—</span>'}</td>
-            <td class="cell-pre">${x.note ? esc(x.note) : '<span class="muted">—</span>'}</td>
-            <td class="tbl-actions"><button class="btn-icon" onclick="event.stopPropagation();openInspectionEdit('${x.id}')">✏️ 編集</button></td>
-          </tr>`).join('')}
-      </tbody>
-    </table>`;
+
+  // 検査区分ごとにテーブルを分ける (未設定はまとめて末尾に)
+  const groups = masterDivisions().map(d => ({ division: d, rows: list.filter(x => (x.division || '').trim() === d) }));
+  const unset = list.filter(x => !(x.division || '').trim());
+  if (unset.length) groups.push({ division: '', rows: unset });
+
+  wrap.innerHTML = groups.map(g => {
+    const label = g.division || '（検査区分 未設定）';
+    const cls = g.division ? 'ins-group-title' : 'ins-group-title unset';
+    if (!g.rows.length) {
+      return `<div class="ins-group">
+        <div class="${cls}">${esc(label)} <span class="ins-group-cnt">0件</span></div>
+        <div class="ins-group-empty">この区分に登録された検査はまだありません。</div>
+      </div>`;
+    }
+    return `<div class="ins-group">
+      <div class="${cls}">${esc(label)} <span class="ins-group-cnt">${g.rows.length}件</span></div>
+      <table class="tbl">
+        <thead>
+          <tr>
+            <th style="width:24%">検査分野</th>
+            <th style="width:40%">検査項目</th>
+            <th style="width:24%">メモ</th>
+            <th style="width:12%"></th>
+          </tr>
+        </thead>
+        <tbody>
+          ${g.rows.map(x => `
+            <tr onclick="openInspectionEdit('${x.id}')">
+              <td class="col-name">${x.field ? esc(x.field) : '<span class="muted">—</span>'}</td>
+              <td class="cell-pre">${x.item ? esc(x.item) : '<span class="muted">—</span>'}</td>
+              <td class="cell-pre">${x.note ? esc(x.note) : '<span class="muted">—</span>'}</td>
+              <td class="tbl-actions"><button class="btn-icon" onclick="event.stopPropagation();openInspectionEdit('${x.id}')">✏️ 編集</button></td>
+            </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>`;
+  }).join('');
 }
 
 function openInspectionEdit(id) {
@@ -1783,10 +1811,10 @@ function populateAgencySelect(selectedId) {
 /* ---- 検査区分 / 検査分野 の連動セレクト ---- */
 function populateDivisionSelect(selected) {
   const sel = document.getElementById('fDivision');
-  const divs = masterDivisions().slice();
+  const divs = DIVISIONS.slice();
   if (selected && !divs.includes(selected)) divs.push(selected); // 旧データの値も残す
   sel.innerHTML = ['<option value="">（未選択）</option>']
-    .concat(divs.sort((a, b) => a.localeCompare(b, 'ja')).map(d => `<option value="${escAttr(d)}">${esc(d)}</option>`)).join('');
+    .concat(divs.map(d => `<option value="${escAttr(d)}">${esc(d)}</option>`)).join('');
   sel.value = selected || '';
 }
 
