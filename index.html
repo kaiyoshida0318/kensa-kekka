@@ -495,6 +495,9 @@ body {
 .tbl-grouped .field-cell { border-right: 1px solid var(--border-light); background: var(--bg); }
 .tbl-grouped .field-cnt { display: inline-block; margin-left: 8px; font-size: 10px; font-weight: 500; color: var(--text-light); background: var(--surface); border: 1px solid var(--border); border-radius: 9px; padding: 0 6px; vertical-align: middle; }
 .tbl-grouped tr.ins-sub td { border-top: 1px dashed var(--border-light); }
+.ag-ins-row { font-size: 12px; padding: 3px 0; }
+.ag-ins-div { display: inline-block; font-size: 10px; background: var(--primary-light); color: var(--primary-dark); border-radius: 8px; padding: 1px 7px; margin-right: 6px; }
+.ag-ins-sep { color: var(--text-light); margin: 0 6px; }
 .ins-group-empty { font-size: 12px; color: var(--text-light); padding: 10px 12px; border: 1px dashed var(--border); border-radius: var(--radius-sm); background: var(--bg); }
 
 /* ===== Detail view ===== */
@@ -578,7 +581,7 @@ body {
   <div class="header-spacer"></div>
   <div class="header-actions">
     <span class="conn-pill off" id="connPill">未接続</span>
-    <span class="app-version" id="appVersion">v1.13.0</span>
+    <span class="app-version" id="appVersion">v1.14.0</span>
     <button class="btn-icon" id="btnReload" title="GitHubから再読み込み">🔄 更新</button>
     <button class="btn-icon" id="btnSettings" title="設定">⚙️ 設定</button>
   </div>
@@ -724,7 +727,7 @@ body {
         <div class="form-row">
           <label>検査機関</label>
           <select id="fAgency"><option value="">（未選択）</option></select>
-          <small class="form-hint">「検査機関」タブで登録した機関から選べます</small>
+          <small class="form-hint">検査項目を選ぶと自動で入ります（手動変更も可）</small>
         </div>
         <div class="form-row">
           <label>検査区分</label>
@@ -830,10 +833,6 @@ body {
         <input type="text" id="agName" placeholder="例: ○○検査センター">
       </div>
       <div class="form-row">
-        <label>主な検査内容</label>
-        <input type="text" id="agInspection" placeholder="例: 食品衛生検査、成分分析">
-      </div>
-      <div class="form-row">
         <label>検査の流れ・メモ</label>
         <textarea id="agFlow" placeholder="申込方法、必要書類、日数、担当者、費用、送付先、注意点など" style="min-height:150px"></textarea>
       </div>
@@ -870,7 +869,13 @@ body {
       </div>
       <div class="form-row">
         <label>検査項目</label>
-        <textarea id="insItem" placeholder="例: 鉛・カドミウム溶出試験&#10;複数行で書けます" style="min-height:110px"></textarea>
+        <textarea id="insItem" placeholder="例: 鉛・カドミウム溶出試験" style="min-height:90px"></textarea>
+        <small class="form-hint">区分・分野・項目の組み合わせで1レコードです</small>
+      </div>
+      <div class="form-row">
+        <label>検査機関</label>
+        <select id="insAgency"><option value="">（未選択）</option></select>
+        <small class="form-hint">検査結果でこの検査を選ぶと、ここの機関が自動で入ります</small>
       </div>
       <div class="form-row">
         <label>メモ</label>
@@ -938,14 +943,14 @@ body {
 'use strict';
 
 /* ======================================================================
-   検査結果保存くん — v1.13.0
+   検査結果保存くん — v1.14.0
    データ保存: GitHub (Contents API)
      - データ:   kensa-data/records.json  { version, records[], agencies[], categories[], flow }
      - 画像:     kensa-data/images/{recordId}/{filename}      (サムネイル1枚)
      - 書類:     kensa-data/files/{recordId}/{slot}/{filename} (4種)
    ====================================================================== */
 
-const APP_VERSION = 'v1.13.0';
+const APP_VERSION = 'v1.14.0';
 const LS_AUTH = 'kensa_auth';
 const DATA_PATH = 'kensa-data/records.json';
 
@@ -1499,7 +1504,10 @@ function filteredAgencies() {
   if (q) {
     list = list.filter(a =>
       (a.name || '').toLowerCase().includes(q) ||
-      (a.mainInspection || '').toLowerCase().includes(q) ||
+      inspectionsForAgency(a.id).some(x =>
+        (x.division || '').toLowerCase().includes(q) ||
+        (x.field || '').toLowerCase().includes(q) ||
+        (x.item || '').toLowerCase().includes(q)) ||
       (a.flowNote || '').toLowerCase().includes(q) ||
       recordsForAgency(a.id).some(r => (r.itemName || '').toLowerCase().includes(q) || (r.itemNumber || '').toLowerCase().includes(q))
     );
@@ -1550,7 +1558,7 @@ function renderAgencies() {
       <thead>
         <tr>
           <th style="width:24%">機関名</th>
-          <th style="width:28%">主な検査内容</th>
+          <th style="width:28%">対応する検査</th>
           <th style="width:34%">検査商品</th>
           <th style="width:14%"></th>
         </tr>
@@ -1559,7 +1567,7 @@ function renderAgencies() {
         ${list.map(a => `
           <tr onclick="openAgencyDetail('${a.id}')">
             <td class="col-name">${esc(a.name || '(名称なし)')}</td>
-            <td>${a.mainInspection ? esc(a.mainInspection) : '<span class="muted">—</span>'}</td>
+            <td>${renderAgencyInspectionSummary(a.id)}</td>
             <td><div class="pchip-wrap">${renderProductChips(recordsForAgency(a.id), 'table', a.id, 4)}</div></td>
             <td class="tbl-actions"><button class="btn-icon" onclick="event.stopPropagation();openAgencyDetail('${a.id}')">詳細を開く</button></td>
           </tr>`).join('')}
@@ -1569,6 +1577,30 @@ function renderAgencies() {
 
 /* ==================== 実施した検査 (inspections) ==================== */
 function inspectionList() { return Array.isArray(state.inspections) ? state.inspections : []; }
+
+// この機関にひも付く「実施した検査」
+function inspectionsForAgency(agId) {
+  return inspectionList().filter(x => x.agencyId === agId);
+}
+function renderAgencyInspectionSummary(agId) {
+  const rows = inspectionsForAgency(agId);
+  if (!rows.length) return '<span class="muted">—</span>';
+  const fields = [...new Set(rows.map(x => (x.field || '').trim()).filter(Boolean))];
+  const shown = fields.slice(0, 3).map(f => esc(f)).join('、');
+  const more = fields.length > 3 ? ` ほか${fields.length - 3}分野` : '';
+  return `${shown || '<span class="muted">—</span>'}${more} <span class="muted">(${rows.length}件)</span>`;
+}
+function renderAgencyInspectionList(agId) {
+  const rows = inspectionsForAgency(agId);
+  if (!rows.length) return '<span class="muted">この機関にひも付く検査はまだありません</span>';
+  return rows.slice()
+    .sort((a, b) => (a.division || '').localeCompare(b.division || '', 'ja') || (a.field || '').localeCompare(b.field || '', 'ja'))
+    .map(x => `<div class="ag-ins-row"><span class="ag-ins-div">${esc(x.division || '未設定')}</span>${esc(x.field || '—')}<span class="ag-ins-sep">/</span>${esc(x.item || '—')}</div>`).join('');
+}
+function agencyNameById(id) {
+  const a = state.agencies.find(x => x.id === id);
+  return a ? (a.name || '') : '';
+}
 
 function populateInspectionFilters() {
   const divs = [...new Set(DIVISIONS.concat(inspectionList().map(x => (x.division || '').trim()).filter(Boolean)))];
@@ -1595,6 +1627,7 @@ function filteredInspections() {
       (x.division || '').toLowerCase().includes(q) ||
       (x.field || '').toLowerCase().includes(q) ||
       (x.item || '').toLowerCase().includes(q) ||
+      (agencyNameById(x.agencyId) || '').toLowerCase().includes(q) ||
       (x.note || '').toLowerCase().includes(q)
     );
   }
@@ -1671,6 +1704,7 @@ function renderInspections() {
       <tr onclick="openInspectionEdit('${x.id}')"${i === 0 ? '' : ' class="ins-sub"'}>
         ${i === 0 ? `<td class="col-name field-cell" rowspan="${fg.rows.length}">${fg.field ? esc(fg.field) : '<span class="muted">—</span>'}<span class="field-cnt">${fg.rows.length}件</span></td>` : ''}
         <td class="cell-pre">${x.item ? esc(x.item) : '<span class="muted">—</span>'}</td>
+        <td>${x.agencyId && agencyNameById(x.agencyId) ? `<span class="link-agency" onclick="event.stopPropagation();openAgencyDetail('${escAttr(x.agencyId)}')">${esc(agencyNameById(x.agencyId))} 🔎</span>` : '<span class="muted">—</span>'}</td>
         <td class="cell-pre">${x.note ? esc(x.note) : '<span class="muted">—</span>'}</td>
         <td class="tbl-actions"><button class="btn-icon" onclick="event.stopPropagation();openInspectionEdit('${x.id}')">✏️ 編集</button></td>
       </tr>`).join('')).join('');
@@ -1679,9 +1713,10 @@ function renderInspections() {
       <table class="tbl tbl-grouped">
         <thead>
           <tr>
-            <th style="width:24%">検査分野</th>
-            <th style="width:40%">検査項目</th>
-            <th style="width:24%">メモ</th>
+            <th style="width:20%">検査分野</th>
+            <th style="width:30%">検査項目</th>
+            <th style="width:20%">検査機関</th>
+            <th style="width:18%">メモ</th>
             <th style="width:12%"></th>
           </tr>
         </thead>
@@ -1689,6 +1724,14 @@ function renderInspections() {
       </table>
     </div>`;
   }).join('');
+}
+
+function populateInsAgencySelect(selectedId) {
+  const sel = document.getElementById('insAgency');
+  const sorted = state.agencies.slice().sort((a, b) => (a.name || '').localeCompare(b.name || '', 'ja'));
+  sel.innerHTML = ['<option value="">（未選択）</option>']
+    .concat(sorted.map(a => `<option value="${escAttr(a.id)}">${esc(a.name || '(名称なし)')}</option>`)).join('');
+  sel.value = selectedId || '';
 }
 
 function openInspectionEdit(id) {
@@ -1700,6 +1743,7 @@ function openInspectionEdit(id) {
   document.getElementById('insDivision').value = x.division || '';
   document.getElementById('insField').value = x.field || '';
   document.getElementById('insItem').value = x.item || '';
+  populateInsAgencySelect(x.agencyId || '');
   document.getElementById('insNote').value = x.note || '';
   document.getElementById('btnDeleteInspection').style.display = isNew ? 'none' : 'inline-block';
   showModal('inspectionModal');
@@ -1718,6 +1762,7 @@ async function handleSaveInspection() {
     id, division,
     field: document.getElementById('insField').value.trim(),
     item: document.getElementById('insItem').value.trim(),
+    agencyId: document.getElementById('insAgency').value || '',
     note: document.getElementById('insNote').value.trim(),
     createdAt: (existing && existing.createdAt) || new Date().toISOString(),
     updatedAt: new Date().toISOString()
@@ -1846,6 +1891,21 @@ function populateFieldSelect(selected) {
   sel.innerHTML = ['<option value="">（未選択）</option>']
     .concat(flds.sort((a, b) => a.localeCompare(b, 'ja')).map(f => `<option value="${escAttr(f)}">${esc(f)}</option>`)).join('');
   sel.value = selected || '';
+}
+
+// 区分・分野・項目が確定したら、その検査にひも付く検査機関を自動で選ぶ
+function autoSelectAgencyFromInspection() {
+  const div = document.getElementById('fDivision').value;
+  const fld = document.getElementById('fField').value;
+  const item = document.getElementById('fItem').value;
+  if (!div || !fld || !item) return;
+  const row = findInspectionRow(div, fld, item);
+  if (!row || !row.agencyId) return;
+  const sel = document.getElementById('fAgency');
+  if (sel.value === row.agencyId) return;
+  if (!state.agencies.some(a => a.id === row.agencyId)) return;
+  sel.value = row.agencyId;
+  toast(`検査機関を「${agencyNameById(row.agencyId)}」に自動設定しました`, 'success');
 }
 
 function populateItemSelect(selected) {
@@ -2149,7 +2209,7 @@ function openAgencyDetail(id) {
   document.getElementById('agencyDetailTitle').textContent = a.name || '検査機関';
   document.getElementById('agencyDetailGrid').innerHTML = `
     <div class="detail-row"><span class="k">機関名</span><span class="v">${esc(a.name || '—')}</span></div>
-    <div class="detail-row"><span class="k">主な検査内容</span><span class="v" style="white-space:pre-wrap">${esc(a.mainInspection || '—')}</span></div>
+    <div class="detail-row"><span class="k">対応する検査</span><span class="v">${renderAgencyInspectionList(a.id)}</span></div>
     <div class="detail-row"><span class="k">検査の流れ</span><span class="v" style="white-space:pre-wrap">${esc(a.flowNote || '—')}</span></div>
   `;
   const recs = recordsForAgency(id);
@@ -2175,7 +2235,6 @@ function openAgencyEdit(id) {
   document.getElementById('agencyModalTitle').textContent = isNew ? '検査機関を追加' : '検査機関を編集';
   document.getElementById('agId').value = id || '';
   document.getElementById('agName').value = a.name || '';
-  document.getElementById('agInspection').value = a.mainInspection || '';
   document.getElementById('agFlow').value = a.flowNote || '';
   document.getElementById('btnDeleteAgency').style.display = isNew ? 'none' : 'inline-block';
   showModal('agencyModal');
@@ -2191,7 +2250,6 @@ async function handleSaveAgency() {
   const existing = state.agencies.find(x => x.id === id);
   const ag = {
     id, name,
-    mainInspection: document.getElementById('agInspection').value.trim(),
     flowNote: document.getElementById('agFlow').value.trim(),
     createdAt: (existing && existing.createdAt) || new Date().toISOString(),
     updatedAt: new Date().toISOString()
@@ -2379,13 +2437,16 @@ function init() {
     const curI = document.getElementById('fItem').value;
     const f = document.getElementById('fField').value;
     populateItemSelect(masterItems(div, f).includes(curI) ? curI : '');
+    autoSelectAgencyFromInspection();
   });
   document.getElementById('fField').addEventListener('change', () => {
     const div = document.getElementById('fDivision').value;
     const f = document.getElementById('fField').value;
     const curI = document.getElementById('fItem').value;
     populateItemSelect(masterItems(div, f).includes(curI) ? curI : '');
+    autoSelectAgencyFromInspection();
   });
+  document.getElementById('fItem').addEventListener('change', autoSelectAgencyFromInspection);
 
 
   // image dropzone
