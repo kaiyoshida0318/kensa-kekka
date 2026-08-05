@@ -315,10 +315,10 @@
       "id": "ins_1785918050499_3hg3",
       "division": "訴求目的検査",
       "field": "有害物質",
-      "item": "test",
+      "item": "シリコン中のRoHS5元素含有有無",
       "note": "",
       "createdAt": "2026-08-05T08:20:50.499Z",
-      "updatedAt": "2026-08-05T08:20:50.499Z"
+      "updatedAt": "2026-08-05T08:21:38.526Z"
     }
   ],
   "flow": "①どんな検査が良さそうかChatGPTに相談\n(本格的な検査を提案しがちだから最低限LPに載せられる検査を探してもらう)\nhttps://chatgpt.com/g/g-p-699d6049f8208191b61ff8bbd1d64e35/c/6a6851ad-f2a0-83ee-8e99-bae95851eb79"
