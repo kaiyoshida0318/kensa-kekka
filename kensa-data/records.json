@@ -1,8 +1,9 @@
 {
-  "version": "v1.15.0",
+  "version": "v1.16.1",
   "records": [
     {
       "id": "rec_1785224421374_m550",
+      "productId": "prd_1786499487712_avvii3",
       "itemName": "カミカミ ネックレス",
       "itemNumber": "si-26-08",
       "result": "progress",
@@ -63,10 +64,21 @@
           "size": 201738,
           "mime": "application/pdf",
           "uploadedAt": "2026-08-04T00:59:45.912Z"
+        },
+        "report": {
+          "id": "doc_1786500448405_fll9au",
+          "filename": "1786500445709_rp8cep________________.pdf",
+          "originalName": "【検査結果】噛み噛みネックレス.pdf",
+          "path": "kensa-data/files/rec_1785224421374_m550/report/1786500445709_rp8cep________________.pdf",
+          "sha": "0ea258883a79e9853620a7a42decf336f7f8c141",
+          "url": "https://raw.githubusercontent.com/kaiyoshida0318/kensa-kekka/main/kensa-data/files/rec_1785224421374_m550/report/1786500445709_rp8cep________________.pdf",
+          "size": 1036578,
+          "mime": "application/pdf",
+          "uploadedAt": "2026-08-12T02:07:28.405Z"
         }
       },
       "createdAt": "2026-07-28T07:40:30.513Z",
-      "updatedAt": "2026-08-05T08:22:07.543Z"
+      "updatedAt": "2026-08-12T02:07:25.709Z"
     },
     {
       "id": "rec_1785402394577_3rm3",
@@ -132,7 +144,8 @@
         }
       },
       "createdAt": "2026-07-30T09:07:25.703Z",
-      "updatedAt": "2026-07-31T08:25:05.376Z"
+      "updatedAt": "2026-07-31T08:25:05.376Z",
+      "productId": "prd_1786499487713_tm6h06"
     },
     {
       "id": "rec_1785402555634_v92b",
@@ -188,7 +201,8 @@
         }
       },
       "createdAt": "2026-07-30T09:11:15.360Z",
-      "updatedAt": "2026-08-05T09:10:01.753Z"
+      "updatedAt": "2026-08-05T09:10:01.753Z",
+      "productId": "prd_1786499487713_pglkg3"
     },
     {
       "id": "rec_1785402746243_a2bv",
@@ -255,7 +269,8 @@
         }
       },
       "createdAt": "2026-07-30T09:13:08.585Z",
-      "updatedAt": "2026-08-05T08:53:31.385Z"
+      "updatedAt": "2026-08-05T08:53:31.385Z",
+      "productId": "prd_1786499487713_l3iqnv"
     }
   ],
   "agencies": [
@@ -353,6 +368,44 @@
       "note": "対象年齢が6歳以上で検査が不要だが、6歳以上が妥当であるか確認を求められた際に必要",
       "createdAt": "2026-08-05T09:08:14.437Z",
       "updatedAt": "2026-08-05T09:09:00.152Z"
+    }
+  ],
+  "products": [
+    {
+      "id": "prd_1786499487712_avvii3",
+      "name": "カミカミ ネックレス",
+      "number": "si-26-08",
+      "images": [],
+      "note": "",
+      "createdAt": "2026-08-12T01:51:27.712Z",
+      "updatedAt": "2026-08-12T01:51:27.713Z"
+    },
+    {
+      "id": "prd_1786499487713_tm6h06",
+      "name": "リトミックスカーフ",
+      "number": "scarf-24-01",
+      "images": [],
+      "note": "",
+      "createdAt": "2026-08-12T01:51:27.713Z",
+      "updatedAt": "2026-08-12T01:51:27.713Z"
+    },
+    {
+      "id": "prd_1786499487713_pglkg3",
+      "name": "ベビーソックス",
+      "number": "baby-24-01-sox",
+      "images": [],
+      "note": "",
+      "createdAt": "2026-08-12T01:51:27.713Z",
+      "updatedAt": "2026-08-12T01:51:27.713Z"
+    },
+    {
+      "id": "prd_1786499487713_l3iqnv",
+      "name": "ヒップバンド",
+      "number": "yoga-24-01-band",
+      "images": [],
+      "note": "",
+      "createdAt": "2026-08-12T01:51:27.713Z",
+      "updatedAt": "2026-08-12T01:51:27.713Z"
     }
   ],
   "flow": "①どんな検査が良さそうかChatGPTに相談\n(本格的な検査を提案しがちだから最低限LPに載せられる検査を探してもらう)\nhttps://chatgpt.com/g/g-p-699d6049f8208191b61ff8bbd1d64e35/c/6a6851ad-f2a0-83ee-8e99-bae95851eb79"
