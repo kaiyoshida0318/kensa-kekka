@@ -401,10 +401,6 @@ body {
 .crumb-sep { color: var(--text-light); }
 .btn-icon.active-mode { background: var(--primary); color: #fff; border-color: var(--primary); }
 
-.flow-intro { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 20px; max-width: 900px; margin-bottom: 20px; box-shadow: var(--shadow); }
-.flow-intro-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
-.flow-intro-title { font-size: 12px; font-weight: 700; color: var(--text-light); flex: 1; }
-
 .flow-note { max-width: 900px; background: var(--primary-light); border: 1px solid var(--border); border-left: 3px solid var(--primary); border-radius: var(--radius-sm); padding: 14px 18px; font-size: 13px; line-height: 1.9; white-space: pre-wrap; margin-bottom: 16px; }
 .flow-choices { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px; max-width: 1100px; }
 .flow-choice-wrap { position: relative; }
@@ -627,7 +623,7 @@ body {
   <div class="header-spacer"></div>
   <div class="header-actions">
     <span class="conn-pill off" id="connPill">未接続</span>
-    <span class="app-version" id="appVersion">v1.18.0</span>
+    <span class="app-version" id="appVersion">v1.18.1</span>
     <button class="btn-icon" id="btnReload" title="GitHubから再読み込み">🔄 更新</button>
     <button class="btn-icon" id="btnSettings" title="設定">⚙️ 設定</button>
   </div>
@@ -719,22 +715,6 @@ body {
       <div class="flow-crumbs" id="flowCrumbs"></div>
       <div class="flow-nav-actions">
         <button class="btn-icon" id="btnFlowEditMode">✏️ 編集モード</button>
-      </div>
-    </div>
-    <div class="flow-intro" id="flowIntroWrap">
-      <div class="flow-intro-head">
-        <span class="flow-intro-title">はじめに</span>
-        <span class="flow-panel-actions" id="flowViewActions">
-          <button class="btn-icon" id="btnFlowEdit">✏️ 編集</button>
-        </span>
-        <span class="flow-panel-actions" id="flowEditActions" style="display:none">
-          <button class="btn-secondary" id="btnFlowCancel">キャンセル</button>
-          <button class="btn-primary" id="btnFlowSave">保存</button>
-        </span>
-      </div>
-      <div id="flowView" class="flow-view"></div>
-      <div id="flowEdit" style="display:none">
-        <textarea id="flowText" class="flow-textarea" placeholder="検査全体のおおまかな流れや前提を書いておけます。&#10;（下の選択肢から進むと、状況ごとの検査と手順が開きます）"></textarea>
       </div>
     </div>
     <div id="flowBody"></div>
@@ -1128,14 +1108,14 @@ body {
 'use strict';
 
 /* ======================================================================
-   検査結果保存くん — v1.18.0
+   検査結果保存くん — v1.18.1
    データ保存: GitHub (Contents API)
      - データ:   kensa-data/records.json  { version, records[], agencies[], categories[], flow }
      - 画像:     kensa-data/images/{recordId}/{filename}      (サムネイル1枚)
      - 書類:     kensa-data/files/{recordId}/{slot}/{filename} (4種)
    ====================================================================== */
 
-const APP_VERSION = 'v1.18.0';
+const APP_VERSION = 'v1.18.1';
 const LS_AUTH = 'kensa_auth';
 const DATA_PATH = 'kensa-data/records.json';
 
@@ -1585,7 +1565,7 @@ function setTab(t) {
   document.getElementById('toolbarAgencies').style.display = (t === 'agencies') ? '' : 'none';
   document.getElementById('toolbarInspections').style.display = (t === 'inspections') ? '' : 'none';
   document.getElementById('toolbarProducts').style.display = (t === 'products') ? '' : 'none';
-  if (t === 'flow') { flowSetMode('view'); flowPath = []; }
+  if (t === 'flow') flowPath = [];
   render();
 }
 
@@ -2925,43 +2905,7 @@ function renderFlowPanel() {
   document.getElementById('inspectionTableWrap').style.display = 'none';
   document.getElementById('productTableWrap').style.display = 'none';
   document.getElementById('emptyState').style.display = 'none';
-  renderFlowView();
   renderFlowNav();
-}
-
-function renderFlowView() {
-  const v = document.getElementById('flowView');
-  if (state.flow && state.flow.trim()) {
-    v.className = 'flow-view';
-    v.textContent = state.flow;
-  } else {
-    v.className = 'flow-view empty';
-    v.textContent = 'まだ記入されていません。「✏️ 編集」から前提やおおまかな流れを書けます。';
-  }
-}
-function flowSetMode(mode) {
-  const edit = mode === 'edit';
-  document.getElementById('flowView').style.display = edit ? 'none' : '';
-  document.getElementById('flowEdit').style.display = edit ? '' : 'none';
-  document.getElementById('flowViewActions').style.display = edit ? 'none' : '';
-  document.getElementById('flowEditActions').style.display = edit ? '' : 'none';
-  if (edit) document.getElementById('flowText').value = state.flow || '';
-}
-async function handleFlowSave() {
-  if (!auth.owner || !auth.repo) { toast('先に⚙️設定でGitHub保存先を登録してください', 'error'); openSettings(); return; }
-  if (!auth.pat) { toast('保存にはPAT(トークン)が必要です。⚙️設定から登録してください', 'error'); openSettings(); return; }
-  const prev = state.flow;
-  state.flow = document.getElementById('flowText').value.trim();
-  showLoading(true, '保存中...');
-  try {
-    await saveData('update flow');
-    renderFlowView();
-    flowSetMode('view');
-    toast('保存しました', 'success');
-  } catch (e) {
-    state.flow = prev;
-    toast('保存失敗: ' + e.message, 'error');
-  } finally { showLoading(false); }
 }
 
 function renderFlowNav() {
@@ -2970,8 +2914,6 @@ function renderFlowNav() {
   btn.classList.toggle('active-mode', flowEditMode);
   // 現在地
   const last = flowPath[flowPath.length - 1];
-  const atRoot = !last;
-  document.getElementById('flowIntroWrap').style.display = atRoot ? '' : 'none';
 
   // パンくず
   const crumbs = ['<button class="crumb" onclick="flowGoTo(0)">🏠 はじめ</button>'];
@@ -3238,9 +3180,6 @@ function init() {
   document.getElementById('btnDeleteFlowNode').onclick = handleDeleteFlowNode;
   document.getElementById('fnMode').addEventListener('change', fnSyncMode);
   document.getElementById('fnDivision').addEventListener('change', () => populateFnFieldSelect(''));
-  document.getElementById('btnFlowEdit').onclick = () => flowSetMode('edit');
-  document.getElementById('btnFlowCancel').onclick = () => flowSetMode('view');
-  document.getElementById('btnFlowSave').onclick = handleFlowSave;
   document.getElementById('btnAdd').onclick = () => openEdit(null);
   document.getElementById('btnSaveRecord').onclick = handleSaveRecord;
   document.getElementById('btnDeleteRecord').onclick = handleDeleteRecord;
