@@ -1,5 +1,5 @@
 {
-  "version": "v1.18.0",
+  "version": "v1.18.1",
   "records": [
     {
       "id": "rec_1785224421374_m550",
@@ -411,15 +411,15 @@
   "flow": "",
   "flowNodes": [
     {
-      "id": "fn_1787549155169_sz8q",
+      "id": "fn_1787551116298_0egu",
       "children": [],
-      "createdAt": "2026-08-24T05:25:55.169Z",
+      "createdAt": "2026-08-24T05:58:36.298Z",
       "title": "LPに検査を載せたい",
-      "body": "",
-      "mode": "auto",
-      "division": "訴求目的検査",
+      "body": "tes",
+      "mode": "manual",
+      "division": "",
       "field": "",
-      "updatedAt": "2026-08-24T05:25:55.169Z"
+      "updatedAt": "2026-08-24T05:58:36.298Z"
     }
   ]
 }
