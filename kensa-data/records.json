@@ -409,17 +409,6 @@
     }
   ],
   "flow": "",
-  "flowNodes": [
-    {
-      "id": "fn_1787551116298_0egu",
-      "title": "LPに検査を載せたい",
-      "body": "tes",
-      "inspectionId": "",
-      "x": 277,
-      "y": 184,
-      "createdAt": "2026-08-24T05:58:36.298Z",
-      "updatedAt": "2026-08-24T08:29:59.842Z"
-    }
-  ],
+  "flowNodes": [],
   "flowEdges": []
 }
