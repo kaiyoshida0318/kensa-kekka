@@ -411,26 +411,15 @@
   "flow": "",
   "flowNodes": [
     {
-      "id": "fn_1787538602417_auy9",
+      "id": "fn_1787549155169_sz8q",
       "children": [],
-      "createdAt": "2026-08-24T02:30:02.417Z",
+      "createdAt": "2026-08-24T05:25:55.169Z",
       "title": "LPに検査を載せたい",
       "body": "",
-      "mode": "manual",
-      "division": "",
+      "mode": "auto",
+      "division": "訴求目的検査",
       "field": "",
-      "updatedAt": "2026-08-24T02:30:02.417Z"
-    },
-    {
-      "id": "fn_1787538161970_llw3",
-      "children": [],
-      "createdAt": "2026-08-24T02:22:41.970Z",
-      "title": "買付前通関前に止められた",
-      "body": "test",
-      "mode": "manual",
-      "division": "",
-      "field": "",
-      "updatedAt": "2026-08-24T02:28:41.446Z"
+      "updatedAt": "2026-08-24T05:25:55.169Z"
     }
   ]
 }
