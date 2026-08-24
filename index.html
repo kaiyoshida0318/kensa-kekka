@@ -392,32 +392,10 @@ body {
 .date-range input { flex: 1; min-width: 0; }
 .date-range-sep { color: var(--text-muted); font-weight: 600; flex-shrink: 0; }
 
-/* 検査の基本的な流れ: ナビゲーター */
-.flow-nav-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; flex-wrap: wrap; }
-.flow-crumbs { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-size: 13px; }
-.crumb { border: none; background: none; color: var(--primary-dark); cursor: pointer; font-size: 13px; font-family: inherit; padding: 3px 6px; border-radius: 6px; }
-.crumb:hover { background: var(--primary-light); }
-.crumb.current { color: var(--text); font-weight: 600; padding: 3px 6px; }
-.crumb-sep { color: var(--text-light); }
-.btn-icon.active-mode { background: var(--primary); color: #fff; border-color: var(--primary); }
+/* 検査の基本的な流れ: マインドマップ */
+.btn-icon.active-mode, .btn-icon.mm-connect-active { background: var(--primary); color: #fff; border-color: var(--primary); }
 
-.flow-note { max-width: 900px; background: var(--primary-light); border: 1px solid var(--border); border-left: 3px solid var(--primary); border-radius: var(--radius-sm); padding: 14px 18px; font-size: 13px; line-height: 1.9; white-space: pre-wrap; margin-bottom: 16px; }
-.flow-choices { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px; max-width: 1100px; }
-.flow-choice-wrap { position: relative; }
-.flow-choice {
-  width: 100%; display: flex; align-items: center; gap: 12px; text-align: left;
-  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
-  padding: 16px 18px; cursor: pointer; font-family: inherit; transition: all .15s; box-shadow: var(--shadow);
-}
-.flow-choice:hover { border-color: var(--primary); transform: translateY(-1px); box-shadow: var(--shadow-lg); }
-.flow-choice-main { flex: 1; min-width: 0; }
-.flow-choice-title { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 3px; }
-.flow-choice-sub { font-size: 11px; color: var(--text-light); }
-.flow-choice-arrow { color: var(--text-light); font-size: 20px; line-height: 1; }
-.flow-choice-ops { position: absolute; top: 6px; right: 6px; display: flex; gap: 3px; background: var(--surface); border-radius: 6px; padding: 2px; }
-.flow-choice-ops .doc-btn:disabled { opacity: .35; cursor: default; }
 .flow-empty { max-width: 900px; font-size: 13px; color: var(--text-light); padding: 18px; border: 1px dashed var(--border); border-radius: var(--radius); background: var(--bg); }
-.flow-edit-bar { display: flex; gap: 8px; margin-top: 16px; }
 
 .flow-step-card { max-width: 900px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px 24px; box-shadow: var(--shadow); }
 .flow-step-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; padding-bottom: 14px; border-bottom: 1px solid var(--border-light); margin-bottom: 14px; }
@@ -427,19 +405,26 @@ body {
 .flow-step-body { font-size: 13px; line-height: 1.95; white-space: pre-wrap; }
 .flow-step-body.empty { color: var(--text-light); }
 
-/* 検査の基本の流れ (タブ) */
-.flow-panel-bar { display: flex; align-items: center; justify-content: flex-end; gap: 12px; margin-bottom: 14px; }
-.flow-panel-title { font-size: 16px; font-weight: 700; }
-.flow-panel-actions { display: flex; gap: 8px; }
-.flow-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 22px 24px; max-width: 900px; box-shadow: var(--shadow); }
-.flow-view { white-space: pre-wrap; font-size: 14px; line-height: 1.9; color: var(--text); min-height: 60px; }
-.flow-view.empty { color: var(--text-light); text-align: center; padding: 36px 12px; line-height: 1.7; }
-.flow-textarea {
-  width: 100%; min-height: 320px; padding: 12px 14px;
-  border-radius: var(--radius-sm); border: 1px solid var(--border);
-  font-family: inherit; font-size: 14px; line-height: 1.9; resize: vertical; outline: none;
+.mm-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }
+.mm-toolbar-left { display: flex; align-items: center; gap: 8px; }
+.mm-toolbar-hint { font-size: 12px; color: var(--text-light); }
+.mm-canvas-wrap { position: relative; border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg); overflow: auto; height: 62vh; min-height: 420px; }
+.mm-canvas { position: relative; width: 2400px; height: 1600px; }
+.mm-edges { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+.mm-nodes { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+.mm-node {
+  position: absolute; width: 210px; background: var(--surface); border: 1.5px solid var(--border);
+  border-radius: var(--radius); box-shadow: var(--shadow); padding: 12px 14px; cursor: grab;
+  font-size: 13px; user-select: none; touch-action: none; transition: box-shadow .15s, border-color .15s;
 }
-.flow-textarea:focus { border-color: var(--primary); }
+.mm-node:hover { border-color: var(--primary); box-shadow: var(--shadow-lg); }
+.mm-node.dragging { cursor: grabbing; box-shadow: var(--shadow-lg); z-index: 20; }
+.mm-node.linked { border-left: 4px solid var(--primary); }
+.mm-node.selected-connect { border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-light); }
+.mm-node-tag { display: inline-block; font-size: 10px; font-weight: 700; color: var(--primary-dark); background: var(--primary-light); border-radius: 4px; padding: 1px 6px; margin-bottom: 4px; }
+.mm-node-title { font-weight: 700; color: var(--text); line-height: 1.4; margin-bottom: 3px; word-break: break-word; }
+.mm-node-sub { font-size: 11px; color: var(--text-light); word-break: break-word; }
+.mm-empty { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); font-size: 13px; color: var(--text-light); text-align: center; padding: 18px; line-height: 1.7; }
 
 .btn-primary, .btn-secondary, .btn-danger {
   padding: 9px 18px; border-radius: var(--radius-sm);
@@ -623,7 +608,7 @@ body {
   <div class="header-spacer"></div>
   <div class="header-actions">
     <span class="conn-pill off" id="connPill">未接続</span>
-    <span class="app-version" id="appVersion">v1.18.1</span>
+    <span class="app-version" id="appVersion">v1.19.0</span>
     <button class="btn-icon" id="btnReload" title="GitHubから再読み込み">🔄 更新</button>
     <button class="btn-icon" id="btnSettings" title="設定">⚙️ 設定</button>
   </div>
@@ -711,13 +696,20 @@ body {
   <div id="inspectionTableWrap" style="display:none"></div>
   <div id="productTableWrap" style="display:none"></div>
   <div id="flowPanel" style="display:none">
-    <div class="flow-nav-bar">
-      <div class="flow-crumbs" id="flowCrumbs"></div>
-      <div class="flow-nav-actions">
-        <button class="btn-icon" id="btnFlowEditMode">✏️ 編集モード</button>
+    <div class="mm-toolbar">
+      <div class="mm-toolbar-left">
+        <button class="btn-add" id="btnMmAddNode">＋ ノード追加</button>
+        <button class="btn-icon" id="btnMmConnect">🔗 つなぐ</button>
       </div>
+      <div class="mm-toolbar-hint">ノードはドラッグで移動、クリックで詳細を表示できます</div>
     </div>
-    <div id="flowBody"></div>
+    <div class="mm-canvas-wrap" id="mmCanvasWrap">
+      <div class="mm-canvas" id="mmCanvas">
+        <svg class="mm-edges" id="mmEdgesSvg"></svg>
+        <div class="mm-nodes" id="mmNodesLayer"></div>
+      </div>
+      <div class="mm-empty" id="mmEmpty" style="display:none">まだノードがありません。「＋ ノード追加」から作成してください。<br>検査を紐づけたノードをクリックすると手順が確認できます。</div>
+    </div>
   </div>
   <div class="empty-state" id="emptyState" style="display:none"></div>
 </main>
@@ -886,51 +878,51 @@ body {
   </div>
 </div>
 
-<!-- ============ Flow Node Modal ============ -->
-<div class="modal-backdrop" id="flowNodeModal" style="display:none">
+<!-- ============ Mind-map Node Edit Modal ============ -->
+<div class="modal-backdrop" id="mmNodeEditModal" style="display:none">
   <div class="modal">
     <div class="modal-header">
-      <h2 id="flowNodeModalTitle">選択肢を追加</h2>
-      <button class="btn-close" onclick="closeModal('flowNodeModal')">×</button>
+      <h2 id="mmNodeEditTitle">ノードを追加</h2>
+      <button class="btn-close" onclick="closeModal('mmNodeEditModal')">×</button>
     </div>
     <div class="modal-body">
-      <input type="hidden" id="fnId">
-      <input type="hidden" id="fnParent">
+      <input type="hidden" id="mnId">
       <div class="form-row">
         <label>見出し <span style="color:var(--fail)">*</span></label>
-        <input type="text" id="fnTitle" placeholder="例: ラクマート買付前・通関前で止められた">
+        <input type="text" id="mnTitle" placeholder="例: ラクマート買付前・通関前で止められた">
       </div>
       <div class="form-row">
-        <label>説明（任意）</label>
-        <textarea id="fnBody" placeholder="この選択肢を選んだときに上部に表示される説明。&#10;一次対応や前提などを書けます"></textarea>
+        <label>リンクする検査（任意）</label>
+        <select id="mmInspectionSelect"><option value="">（リンクしない）</option></select>
+        <small class="form-hint">選ぶと、このノードをクリックしたときにその検査の手順が表示されます</small>
       </div>
       <div class="form-row">
-        <label>次に出すもの</label>
-        <select id="fnMode">
-          <option value="manual">この下に選択肢を手で作る</option>
-          <option value="auto">検査の種類から自動で並べる</option>
-          <option value="leaf">説明だけ表示して終わり</option>
-        </select>
-      </div>
-      <div class="form-2col" id="fnAutoWrap" style="display:none">
-        <div class="form-row">
-          <label>検査区分</label>
-          <select id="fnDivision">
-            <option value="">（すべて）</option>
-            <option value="訴求目的検査">訴求目的検査</option>
-            <option value="必要検査">必要検査</option>
-          </select>
-        </div>
-        <div class="form-row">
-          <label>検査分野（任意）</label>
-          <select id="fnField"><option value="">（すべて）</option></select>
-          <small class="form-hint">指定するとその分野だけに絞られます</small>
-        </div>
+        <label>説明・メモ（任意）</label>
+        <textarea id="mnBody" placeholder="このノードの説明やメモ"></textarea>
       </div>
       <div class="modal-actions">
-        <button class="btn-danger" id="btnDeleteFlowNode" style="margin-right:auto;display:none">🗑️ この選択肢を削除</button>
-        <button class="btn-secondary" onclick="closeModal('flowNodeModal')">キャンセル</button>
-        <button class="btn-primary" id="btnSaveFlowNode">保存</button>
+        <button class="btn-danger" id="btnDeleteMmNode" style="margin-right:auto;display:none">🗑️ このノードを削除</button>
+        <button class="btn-secondary" onclick="closeModal('mmNodeEditModal')">キャンセル</button>
+        <button class="btn-primary" id="btnSaveMmNode">保存</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ Mind-map Node Detail Modal ============ -->
+<div class="modal-backdrop" id="mmDetailModal" style="display:none">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="mmDetailTitle">ノード</h2>
+      <button class="btn-close" onclick="closeModal('mmDetailModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="mmDetailId">
+      <div id="mmDetailBody"></div>
+      <div class="modal-actions">
+        <button class="btn-danger" id="btnMmDeleteFromDetail" style="margin-right:auto">🗑️ 削除</button>
+        <button class="btn-secondary" onclick="closeModal('mmDetailModal')">閉じる</button>
+        <button class="btn-primary" id="btnMmEditFromDetail">✏️ 編集</button>
       </div>
     </div>
   </div>
@@ -1108,14 +1100,14 @@ body {
 'use strict';
 
 /* ======================================================================
-   検査結果保存くん — v1.18.1
+   検査結果保存くん — v1.19.0
    データ保存: GitHub (Contents API)
      - データ:   kensa-data/records.json  { version, records[], agencies[], categories[], flow }
      - 画像:     kensa-data/images/{recordId}/{filename}      (サムネイル1枚)
      - 書類:     kensa-data/files/{recordId}/{slot}/{filename} (4種)
    ====================================================================== */
 
-const APP_VERSION = 'v1.18.1';
+const APP_VERSION = 'v1.19.0';
 const LS_AUTH = 'kensa_auth';
 const DATA_PATH = 'kensa-data/records.json';
 
@@ -1133,7 +1125,7 @@ const DIVISIONS = ['訴求目的検査', '必要検査'];
 
 // ----- state -----
 let auth = { pat: '', owner: '', repo: '', branch: 'main' };
-let state = { records: [], products: [], agencies: [], categories: [], inspections: [], flow: '', flowNodes: [], sha: null, _loadFailed: false, _wasEmpty: false };
+let state = { records: [], products: [], agencies: [], categories: [], inspections: [], flow: '', flowNodes: [], flowEdges: [], sha: null, _loadFailed: false, _wasEmpty: false };
 let currentTab = 'results';
 let filterResult = 'all';
 let filterRecDivision = 'all';
@@ -1218,6 +1210,7 @@ async function loadRecords() {
       products: Array.isArray(json.products) ? json.products : [],
       flow: typeof json.flow === 'string' ? json.flow : '',
       flowNodes: Array.isArray(json.flowNodes) ? json.flowNodes : [],
+      flowEdges: Array.isArray(json.flowEdges) ? json.flowEdges : [],
       sha: data.sha
     };
   } catch (e) {
@@ -1231,7 +1224,7 @@ async function saveData(message, retryCount = 0) {
   if (state._loadFailed || state._wasEmpty) {
     throw new Error('データの読み込みに失敗しているため、上書き保存を中止しました。「🔄更新」で再読み込みしてください。');
   }
-  const content = JSON.stringify({ version: APP_VERSION, records: state.records, agencies: state.agencies, categories: state.categories || [], inspections: state.inspections || [], products: state.products || [], flow: state.flow || '', flowNodes: state.flowNodes || [] }, null, 2);
+  const content = JSON.stringify({ version: APP_VERSION, records: state.records, agencies: state.agencies, categories: state.categories || [], inspections: state.inspections || [], products: state.products || [], flow: state.flow || '', flowNodes: state.flowNodes || [], flowEdges: state.flowEdges || [] }, null, 2);
   const body = { message: message || 'update data', content: b64encode(content), branch: auth.branch };
   if (state.sha) body.sha = state.sha;
   const res = await ghFetch(`contents/${DATA_PATH}`, { method: 'PUT', body: JSON.stringify(body) });
@@ -1565,17 +1558,7 @@ function setTab(t) {
   document.getElementById('toolbarAgencies').style.display = (t === 'agencies') ? '' : 'none';
   document.getElementById('toolbarInspections').style.display = (t === 'inspections') ? '' : 'none';
   document.getElementById('toolbarProducts').style.display = (t === 'products') ? '' : 'none';
-  if (t === 'flow') flowPath = [];
   render();
-}
-
-function renderFlowPanel() {
-  document.getElementById('grid').style.display = 'none';
-  document.getElementById('agencyTableWrap').style.display = 'none';
-  document.getElementById('inspectionTableWrap').style.display = 'none';
-  document.getElementById('productTableWrap').style.display = 'none';
-  document.getElementById('emptyState').style.display = 'none';
-  renderFlowView();
 }
 
 /* ==================== results ==================== */
@@ -2797,7 +2780,8 @@ async function reloadFromGitHub() {
     const loaded = await loadRecords();
     state = {
       records: loaded.records, agencies: loaded.agencies || [], categories: loaded.categories || [],
-      inspections: loaded.inspections || [], products: loaded.products || [], flow: loaded.flow || '', sha: loaded.sha,
+      inspections: loaded.inspections || [], products: loaded.products || [], flow: loaded.flow || '',
+      flowNodes: loaded.flowNodes || [], flowEdges: loaded.flowEdges || [], sha: loaded.sha,
       _loadFailed: !!loaded._loadFailed, _wasEmpty: !!loaded._wasEmpty
     };
     // 旧「検査分類」を「検査の種類」マスタへ取り込む(検査区分は空欄のまま)
@@ -2806,6 +2790,8 @@ async function reloadFromGitHub() {
       if (np > 0) toast(`既存の検査結果から商品マスタを${np}件つくりました`, 'success');
       const n = migrateCategoriesToInspections();
       if (n > 0) toast(`旧「検査分類」${n}件を「検査の種類」の検査分野として取り込みました（検査区分は未設定です）`, 'success');
+      const nm = migrateFlowTreeToMindmap();
+      if (nm > 0) toast(`「検査の基本的な流れ」をマインドマップ形式に変換しました（${nm}件のノード）`, 'success');
     }
     render();
     if (!loaded._loadFailed) toast('読み込み完了', 'success');
@@ -2864,38 +2850,54 @@ function setFilter(r) {
   if (currentTab === 'results') render();
 }
 
-/* ==================== 検査の基本的な流れ (ナビゲーター) ==================== */
-let flowPath = [];          // [{t:'node'|'ins', id}]
-let flowEditMode = false;
-
+/* ==================== 検査の基本的な流れ (マインドマップ) ==================== */
 function flowNodes() { return Array.isArray(state.flowNodes) ? state.flowNodes : (state.flowNodes = []); }
-function findFlowNode(id, list) {
-  for (const n of (list || flowNodes())) {
-    if (n.id === id) return n;
-    const hit = findFlowNode(id, n.children || []);
-    if (hit) return hit;
+function flowEdges() { return Array.isArray(state.flowEdges) ? state.flowEdges : (state.flowEdges = []); }
+function findFlowNode(id) { return flowNodes().find(n => n.id === id) || null; }
+
+let mmConnectMode = false;
+let mmConnectFrom = null;
+let mmAddSeq = 0;
+let mmDrag = null;
+
+// 旧ツリー型ナビゲーター(v1.18系)のデータをマインドマップ形式へ変換(初回のみ・冪等)
+function migrateFlowTreeToMindmap() {
+  const nodes = state.flowNodes || [];
+  const legacy = nodes.some(n => n && (n.mode || Array.isArray(n.children)));
+  if (!legacy) return 0;
+  const newNodes = [];
+  const newEdges = [];
+  let row = 0;
+  const COLW = 260, ROWH = 130;
+  const mkId = p => p + '_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+  function addEdge(a, b) { if (a && b) newEdges.push({ id: mkId('fe'), from: a, to: b }); }
+  function walk(list, parentId, depth) {
+    (list || []).forEach(n => {
+      if (!n) return;
+      if (n.mode === 'auto') {
+        const noteId = n.id || mkId('fn');
+        newNodes.push({ id: noteId, title: n.title || '', body: n.body || '', inspectionId: '', x: depth * COLW + 20, y: (row++) * ROWH + 20, createdAt: n.createdAt || new Date().toISOString(), updatedAt: n.updatedAt || new Date().toISOString() });
+        addEdge(parentId, noteId);
+        const matches = inspectionList().filter(x =>
+          (!n.division || (x.division || '').trim() === n.division) &&
+          (!n.field || (x.field || '').trim() === n.field));
+        matches.forEach(x => {
+          const insId = mkId('fni');
+          newNodes.push({ id: insId, title: x.item || '', body: '', inspectionId: x.id, x: (depth + 1) * COLW + 20, y: (row++) * ROWH + 20, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() });
+          addEdge(noteId, insId);
+        });
+      } else {
+        const id = n.id || mkId('fn');
+        newNodes.push({ id, title: n.title || '', body: n.body || '', inspectionId: '', x: depth * COLW + 20, y: (row++) * ROWH + 20, createdAt: n.createdAt || new Date().toISOString(), updatedAt: n.updatedAt || new Date().toISOString() });
+        addEdge(parentId, id);
+        walk(n.children || [], id, depth + 1);
+      }
+    });
   }
-  return null;
-}
-function findFlowParent(id, list, parent) {
-  for (const n of (list || flowNodes())) {
-    if (n.id === id) return parent || null;
-    const hit = findFlowParent(id, n.children || [], n);
-    if (hit !== undefined && hit !== null) return hit;
-    if (hit === null && (n.children || []).some(c => c.id === id)) return n;
-  }
-  return null;
-}
-function siblingListOf(id) {
-  const parent = findFlowParent(id);
-  return parent ? (parent.children = parent.children || []) : flowNodes();
-}
-// 自動展開ノードに該当する検査の種類
-function autoInspections(node) {
-  return inspectionList().filter(x =>
-    (!node.division || (x.division || '').trim() === node.division) &&
-    (!node.field || (x.field || '').trim() === node.field))
-    .sort((a, b) => (a.field || '').localeCompare(b.field || '', 'ja') || (a.item || '').localeCompare(b.item || '', 'ja'));
+  walk(nodes, null, 0);
+  state.flowNodes = newNodes;
+  state.flowEdges = newEdges;
+  return newNodes.length;
 }
 
 /* ---- 表示 ---- */
@@ -2905,109 +2907,258 @@ function renderFlowPanel() {
   document.getElementById('inspectionTableWrap').style.display = 'none';
   document.getElementById('productTableWrap').style.display = 'none';
   document.getElementById('emptyState').style.display = 'none';
-  renderFlowNav();
+  renderMmCanvas();
 }
 
-function renderFlowNav() {
-  const btn = document.getElementById('btnFlowEditMode');
-  btn.textContent = flowEditMode ? '✅ 編集モードを終了' : '✏️ 編集モード';
-  btn.classList.toggle('active-mode', flowEditMode);
-  // 現在地
-  const last = flowPath[flowPath.length - 1];
+function renderMmCanvas() {
+  const nodes = flowNodes();
+  document.getElementById('mmEmpty').style.display = nodes.length ? 'none' : 'block';
+  const layer = document.getElementById('mmNodesLayer');
+  layer.innerHTML = nodes.map(n => {
+    const ins = n.inspectionId ? inspectionList().find(x => x.id === n.inspectionId) : null;
+    const sub = ins
+      ? `${esc(ins.division || '未設定')}${ins.field ? ' / ' + esc(ins.field) : ''}`
+      : esc((n.body || '').split('\n')[0].slice(0, 30) || '');
+    const selected = mmConnectMode && mmConnectFrom === n.id;
+    return `<div class="mm-node${ins ? ' linked' : ''}${selected ? ' selected-connect' : ''}" id="mmNode_${n.id}" data-id="${escAttr(n.id)}" style="left:${n.x || 0}px; top:${n.y || 0}px">
+      ${ins ? '<span class="mm-node-tag">🔬 検査</span>' : ''}
+      <div class="mm-node-title">${esc(n.title || (ins ? ins.item : '') || '(見出しなし)')}</div>
+      ${sub ? `<div class="mm-node-sub">${sub}</div>` : ''}
+    </div>`;
+  }).join('');
+  layer.querySelectorAll('.mm-node').forEach(el => { el.addEventListener('pointerdown', mmNodePointerDown); });
+  renderMmEdges();
+}
 
-  // パンくず
-  const crumbs = ['<button class="crumb" onclick="flowGoTo(0)">🏠 はじめ</button>'];
-  flowPath.forEach((step, i) => {
-    const label = step.t === 'ins'
-      ? ((inspectionList().find(x => x.id === step.id) || {}).item || '検査')
-      : ((findFlowNode(step.id) || {}).title || '選択肢');
-    crumbs.push('<span class="crumb-sep">›</span>');
-    crumbs.push(i === flowPath.length - 1
-      ? `<span class="crumb current">${esc(label)}</span>`
-      : `<button class="crumb" onclick="flowGoTo(${i + 1})">${esc(label)}</button>`);
-  });
-  document.getElementById('flowCrumbs').innerHTML = crumbs.join('');
+function mmNodeRect(id) {
+  const el = document.getElementById('mmNode_' + id);
+  if (!el) return null;
+  return { cx: el.offsetLeft + el.offsetWidth / 2, cy: el.offsetTop + el.offsetHeight / 2 };
+}
 
-  const body = document.getElementById('flowBody');
+function renderMmEdges() {
+  const svg = document.getElementById('mmEdgesSvg');
+  const defs = '<defs><marker id="mmArrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#9aa3af"></path></marker></defs>';
+  const lines = flowEdges().map(e => {
+    const a = mmNodeRect(e.from), b = mmNodeRect(e.to);
+    if (!a || !b) return '';
+    return `<line x1="${a.cx}" y1="${a.cy}" x2="${b.cx}" y2="${b.cy}" stroke="#9aa3af" stroke-width="2" marker-end="url(#mmArrow)"></line>`;
+  }).join('');
+  svg.innerHTML = defs + lines;
+}
 
-  // 検査の種類カード(終端)
-  if (last && last.t === 'ins') {
-    const x = inspectionList().find(v => v.id === last.id);
-    body.innerHTML = x ? renderInspectionStepCard(x) : '<div class="flow-empty">この検査は削除されたようです。</div>';
-    return;
+/* ---- ノードのドラッグ移動・クリック ---- */
+function mmNodePointerDown(e) {
+  const id = e.currentTarget.dataset.id;
+  if (mmConnectMode) { mmConnectClick(id); return; }
+  e.preventDefault();
+  const el = e.currentTarget;
+  mmDrag = { id, pointerId: e.pointerId, startX: e.clientX, startY: e.clientY, origX: el.offsetLeft, origY: el.offsetTop, moved: false, el };
+  el.classList.add('dragging');
+  try { el.setPointerCapture(e.pointerId); } catch (err) {}
+  el.addEventListener('pointermove', mmNodePointerMove);
+  el.addEventListener('pointerup', mmNodePointerUp);
+  el.addEventListener('pointercancel', mmNodePointerUp);
+}
+function mmNodePointerMove(e) {
+  if (!mmDrag || e.pointerId !== mmDrag.pointerId) return;
+  const dx = e.clientX - mmDrag.startX, dy = e.clientY - mmDrag.startY;
+  if (Math.abs(dx) > 3 || Math.abs(dy) > 3) mmDrag.moved = true;
+  if (!mmDrag.moved) return;
+  const nx = Math.max(0, mmDrag.origX + dx);
+  const ny = Math.max(0, mmDrag.origY + dy);
+  mmDrag.el.style.left = nx + 'px';
+  mmDrag.el.style.top = ny + 'px';
+  renderMmEdges();
+}
+async function mmNodePointerUp(e) {
+  if (!mmDrag || e.pointerId !== mmDrag.pointerId) return;
+  const { id, el, moved, pointerId } = mmDrag;
+  el.classList.remove('dragging');
+  el.removeEventListener('pointermove', mmNodePointerMove);
+  el.removeEventListener('pointerup', mmNodePointerUp);
+  el.removeEventListener('pointercancel', mmNodePointerUp);
+  try { el.releasePointerCapture(pointerId); } catch (err) {}
+  mmDrag = null;
+  if (moved) {
+    const n = findFlowNode(id);
+    if (n) {
+      n.x = el.offsetLeft; n.y = el.offsetTop; n.updatedAt = new Date().toISOString();
+      try { await saveData('move flow node: ' + (n.title || id)); }
+      catch (err) { toast('位置の保存に失敗: ' + err.message, 'error'); }
+    }
+  } else {
+    mmOpenDetail(id);
   }
+}
 
-  const node = last ? findFlowNode(last.id) : null;
+/* ---- ノードをつなぐ ---- */
+function toggleMmConnect() {
+  mmConnectMode = !mmConnectMode;
+  mmConnectFrom = null;
+  const btn = document.getElementById('btnMmConnect');
+  btn.classList.toggle('mm-connect-active', mmConnectMode);
+  btn.textContent = mmConnectMode ? '✅ つなぐ操作を終了' : '🔗 つなぐ';
+  if (mmConnectMode) toast('つなぎたい2つのノードを順にクリックしてください（すでにつながっている場合は解除されます）', 'success');
+  renderMmCanvas();
+}
+
+async function mmConnectClick(id) {
+  if (!mmConnectFrom) { mmConnectFrom = id; renderMmCanvas(); return; }
+  if (mmConnectFrom === id) { mmConnectFrom = null; renderMmCanvas(); return; }
+  const a = mmConnectFrom, b = id;
+  mmConnectFrom = null;
+  const edges = flowEdges();
+  const idx = edges.findIndex(e => (e.from === a && e.to === b) || (e.from === b && e.to === a));
+  const before = JSON.stringify(edges);
+  if (idx >= 0) edges.splice(idx, 1);
+  else edges.push({ id: 'fe_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8), from: a, to: b });
+  renderMmCanvas();
+  try {
+    await saveData(idx >= 0 ? 'remove flow edge' : 'add flow edge');
+    toast(idx >= 0 ? '接続を解除しました' : 'つなぎました', 'success');
+  } catch (err) {
+    state.flowEdges = JSON.parse(before);
+    renderMmCanvas();
+    toast('保存失敗: ' + err.message, 'error');
+  }
+}
+
+/* ---- 詳細表示 ---- */
+function mmOpenDetail(id) {
+  const n = findFlowNode(id);
+  if (!n) return;
+  const ins = n.inspectionId ? inspectionList().find(x => x.id === n.inspectionId) : null;
+  document.getElementById('mmDetailId').value = id;
+  document.getElementById('mmDetailTitle').textContent = n.title || (ins ? ins.item : '') || '(見出しなし)';
   let html = '';
-  if (node && (node.body || '').trim()) {
-    html += `<div class="flow-note">${esc(node.body)}</div>`;
+  if (ins) {
+    html += renderInspectionStepCard(ins);
+    if ((n.body || '').trim()) html += `<div class="flow-step-label" style="margin-top:16px">メモ</div><div class="flow-step-body">${esc(n.body)}</div>`;
+  } else if ((n.body || '').trim()) {
+    html += `<div class="flow-step-body">${esc(n.body)}</div>`;
+  } else {
+    html += '<div class="flow-empty">説明がまだ書かれていません。「✏️ 編集」から追加できます。</div>';
   }
-
-  if (node && node.mode === 'auto') {
-    const rows = autoInspections(node);
-    html += rows.length
-      ? `<div class="flow-choices">${rows.map(x => `
-          <button class="flow-choice" onclick="flowOpenInspection('${x.id}')">
-            <div class="flow-choice-main">
-              <div class="flow-choice-title">${esc(x.item || '(検査項目なし)')}</div>
-              <div class="flow-choice-sub">${esc(x.division || '')}${x.field ? ' / ' + esc(x.field) : ''}${x.agencyId && agencyNameById(x.agencyId) ? ' ・ ' + esc(agencyNameById(x.agencyId)) : ''}</div>
-            </div>
-            <span class="flow-choice-arrow">›</span>
-          </button>`).join('')}</div>`
-      : `<div class="flow-empty">条件に合う検査がまだ登録されていません。「検査の種類」タブで追加すると、ここに自動で並びます。</div>`;
-    body.innerHTML = html;
-    return;
-  }
-
-  if (node && node.mode === 'leaf') {
-    if (!(node.body || '').trim()) html += '<div class="flow-empty">説明がまだ書かれていません。</div>';
-    if (flowEditMode) html += flowEditToolbar(node.id, true);
-    body.innerHTML = html;
-    return;
-  }
-
-  // 手動の選択肢
-  const children = node ? (node.children || []) : flowNodes();
-  if (children.length) {
-    html += `<div class="flow-choices">${children.map((c, i) => `
-      <div class="flow-choice-wrap">
-        <button class="flow-choice" onclick="flowOpenNode('${c.id}')">
-          <div class="flow-choice-main">
-            <div class="flow-choice-title">${esc(c.title || '(見出しなし)')}</div>
-            ${flowChoiceSub(c)}
-          </div>
-          <span class="flow-choice-arrow">›</span>
-        </button>
-        ${flowEditMode ? `<div class="flow-choice-ops">
-          <button class="doc-btn" title="上へ" onclick="moveFlowNode('${c.id}',-1)"${i === 0 ? ' disabled' : ''}>↑</button>
-          <button class="doc-btn" title="下へ" onclick="moveFlowNode('${c.id}',1)"${i === children.length - 1 ? ' disabled' : ''}>↓</button>
-          <button class="doc-btn" title="編集" onclick="openFlowNodeEdit('${c.id}')">✏️</button>
-        </div>` : ''}
-      </div>`).join('')}</div>`;
-  } else if (!(node && (node.body || '').trim())) {
-    html += flowEditMode
-      ? '<div class="flow-empty">まだ選択肢がありません。下の「＋ 選択肢を追加」から作成してください。</div>'
-      : '<div class="flow-empty">まだ選択肢が登録されていません。右上の「✏️ 編集モード」から追加できます。</div>';
-  }
-  if (flowEditMode) html += flowEditToolbar(node ? node.id : '', !!node);
-  body.innerHTML = html;
+  document.getElementById('mmDetailBody').innerHTML = html;
+  showModal('mmDetailModal');
+}
+function mmEditFromDetail() {
+  const id = document.getElementById('mmDetailId').value;
+  closeModal('mmDetailModal');
+  openMmNodeEdit(id);
+}
+async function mmDeleteFromDetail() {
+  document.getElementById('mnId').value = document.getElementById('mmDetailId').value;
+  await handleDeleteMmNode();
 }
 
-function flowChoiceSub(c) {
-  if (c.mode === 'auto') {
-    const n = autoInspections(c).length;
-    return `<div class="flow-choice-sub">${esc(c.division || 'すべての区分')}${c.field ? ' / ' + esc(c.field) : ''} の検査 ${n}件</div>`;
-  }
-  if (c.mode === 'leaf') return `<div class="flow-choice-sub">${esc((c.body || '').split('\n')[0].slice(0, 40) || '説明')}</div>`;
-  const n = (c.children || []).length;
-  return `<div class="flow-choice-sub">${n ? n + 'つの選択肢' : '（中身は未作成）'}</div>`;
+/* ---- 編集 ---- */
+function mmDefaultPos() {
+  const wrap = document.getElementById('mmCanvasWrap');
+  const cx = wrap.scrollLeft + wrap.clientWidth / 2 - 105;
+  const cy = wrap.scrollTop + wrap.clientHeight / 2 - 40;
+  const off = (mmAddSeq++ % 6) * 26;
+  return { x: Math.max(10, Math.round(cx + off)), y: Math.max(10, Math.round(cy + off)) };
 }
 
-function flowEditToolbar(parentId, isChild) {
-  return `<div class="flow-edit-bar">
-    <button class="btn-add" onclick="openFlowNodeEdit(null,'${parentId}')">＋ 選択肢を追加</button>
-    ${isChild ? `<button class="btn-icon" onclick="openFlowNodeEdit('${parentId}')">✏️ この階層を編集</button>` : ''}
-  </div>`;
+function populateMmInspectionSelect(selected) {
+  const sel = document.getElementById('mmInspectionSelect');
+  const rows = inspectionList().slice().sort((a, b) =>
+    (a.division || '').localeCompare(b.division || '', 'ja') ||
+    (a.field || '').localeCompare(b.field || '', 'ja') ||
+    (a.item || '').localeCompare(b.item || '', 'ja'));
+  sel.innerHTML = ['<option value="">（リンクしない）</option>']
+    .concat(rows.map(x => `<option value="${escAttr(x.id)}">${esc(x.division || '未設定')} / ${esc(x.field || '—')} / ${esc(x.item || '(検査項目なし)')}</option>`))
+    .join('');
+  sel.value = selected || '';
+}
+
+function openMmNodeEdit(id) {
+  const isNew = !id;
+  const n = isNew ? {} : (findFlowNode(id) || {});
+  document.getElementById('mmNodeEditTitle').textContent = isNew ? 'ノードを追加' : 'ノードを編集';
+  document.getElementById('mnId').value = id || '';
+  document.getElementById('mnTitle').value = n.title || '';
+  document.getElementById('mnBody').value = n.body || '';
+  populateMmInspectionSelect(n.inspectionId || '');
+  document.getElementById('btnDeleteMmNode').style.display = isNew ? 'none' : 'inline-block';
+  showModal('mmNodeEditModal');
+}
+
+function mmInspectionSelectChanged() {
+  const titleEl = document.getElementById('mnTitle');
+  if (titleEl.value.trim()) return;
+  const sel = document.getElementById('mmInspectionSelect');
+  if (!sel.value) return;
+  const opt = sel.options[sel.selectedIndex];
+  const parts = opt.textContent.split(' / ');
+  titleEl.value = (parts[parts.length - 1] || '').trim();
+}
+
+async function handleSaveMmNode() {
+  const title = document.getElementById('mnTitle').value.trim();
+  if (!title) { toast('見出しを入力してください', 'error'); return; }
+  if (!auth.owner || !auth.repo) { toast('先に⚙️設定でGitHub保存先を登録してください', 'error'); openSettings(); return; }
+  if (!auth.pat) { toast('保存にはPAT(トークン)が必要です。⚙️設定から登録してください', 'error'); openSettings(); return; }
+
+  const id = document.getElementById('mnId').value;
+  const body = document.getElementById('mnBody').value.trim();
+  const inspectionId = document.getElementById('mmInspectionSelect').value;
+  const beforeNodes = JSON.stringify(flowNodes());
+
+  let target;
+  if (id) {
+    target = findFlowNode(id);
+    if (!target) return;
+  } else {
+    const pos = mmDefaultPos();
+    target = { id: 'fn_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8), x: pos.x, y: pos.y, createdAt: new Date().toISOString() };
+    flowNodes().push(target);
+  }
+  target.title = title;
+  target.body = body;
+  target.inspectionId = inspectionId;
+  target.updatedAt = new Date().toISOString();
+
+  showLoading(true, '保存中...');
+  try {
+    await saveData(`save flow node: ${title}`);
+    closeModal('mmNodeEditModal');
+    renderMmCanvas();
+    toast('保存しました', 'success');
+  } catch (e) {
+    console.error(e);
+    state.flowNodes = JSON.parse(beforeNodes);
+    renderMmCanvas();
+    toast('保存失敗: ' + e.message, 'error');
+  } finally { showLoading(false); }
+}
+
+async function handleDeleteMmNode() {
+  const id = document.getElementById('mnId').value;
+  const n = findFlowNode(id);
+  if (!n) return;
+  const edgeCount = flowEdges().filter(e => e.from === id || e.to === id).length;
+  if (!confirm(`「${n.title}」を削除します。${edgeCount ? `\nつながっている線 ${edgeCount}本も一緒に削除されます。` : ''}\nよろしいですか?`)) return;
+  const beforeNodes = JSON.stringify(flowNodes());
+  const beforeEdges = JSON.stringify(flowEdges());
+  state.flowNodes = flowNodes().filter(x => x.id !== id);
+  state.flowEdges = flowEdges().filter(e => e.from !== id && e.to !== id);
+  showLoading(true, '削除中...');
+  try {
+    await saveData(`delete flow node: ${n.title}`);
+    closeModal('mmNodeEditModal');
+    closeModal('mmDetailModal');
+    renderMmCanvas();
+    toast('削除しました', 'success');
+  } catch (e) {
+    console.error(e);
+    state.flowNodes = JSON.parse(beforeNodes);
+    state.flowEdges = JSON.parse(beforeEdges);
+    renderMmCanvas();
+    toast('削除失敗: ' + e.message, 'error');
+  } finally { showLoading(false); }
 }
 
 function renderInspectionStepCard(x) {
@@ -3031,141 +3182,6 @@ function renderInspectionStepCard(x) {
   </div>`;
 }
 
-/* ---- 遷移 ---- */
-function flowOpenNode(id) {
-  const n = findFlowNode(id);
-  if (!n) return;
-  flowPath.push({ t: 'node', id });
-  renderFlowNav();
-}
-function flowOpenInspection(id) {
-  flowPath.push({ t: 'ins', id });
-  renderFlowNav();
-}
-function flowGoTo(depth) {
-  flowPath = flowPath.slice(0, depth);
-  renderFlowNav();
-}
-function toggleFlowEditMode() {
-  flowEditMode = !flowEditMode;
-  renderFlowNav();
-}
-
-/* ---- 編集 ---- */
-function populateFnFieldSelect(selected) {
-  const sel = document.getElementById('fnField');
-  const div = document.getElementById('fnDivision').value;
-  const flds = masterFields(div);
-  if (selected && !flds.includes(selected)) flds.push(selected);
-  sel.innerHTML = ['<option value="">（すべて）</option>']
-    .concat(flds.map(f => `<option value="${escAttr(f)}">${esc(f)}</option>`)).join('');
-  sel.value = selected || '';
-}
-function fnSyncMode() {
-  document.getElementById('fnAutoWrap').style.display =
-    document.getElementById('fnMode').value === 'auto' ? '' : 'none';
-}
-
-function openFlowNodeEdit(id, parentId) {
-  const isNew = !id;
-  const n = isNew ? {} : (findFlowNode(id) || {});
-  document.getElementById('flowNodeModalTitle').textContent = isNew ? '選択肢を追加' : '選択肢を編集';
-  document.getElementById('fnId').value = id || '';
-  document.getElementById('fnParent').value = isNew ? (parentId || '') : '';
-  document.getElementById('fnTitle').value = n.title || '';
-  document.getElementById('fnBody').value = n.body || '';
-  document.getElementById('fnMode').value = n.mode || 'manual';
-  document.getElementById('fnDivision').value = n.division || '';
-  populateFnFieldSelect(n.field || '');
-  fnSyncMode();
-  document.getElementById('btnDeleteFlowNode').style.display = isNew ? 'none' : 'inline-block';
-  showModal('flowNodeModal');
-}
-
-async function handleSaveFlowNode() {
-  const title = document.getElementById('fnTitle').value.trim();
-  if (!title) { toast('見出しを入力してください', 'error'); return; }
-  if (!auth.owner || !auth.repo) { toast('先に⚙️設定でGitHub保存先を登録してください', 'error'); openSettings(); return; }
-  if (!auth.pat) { toast('保存にはPAT(トークン)が必要です。⚙️設定から登録してください', 'error'); openSettings(); return; }
-
-  const id = document.getElementById('fnId').value;
-  const parentId = document.getElementById('fnParent').value;
-  const mode = document.getElementById('fnMode').value;
-  const division = document.getElementById('fnDivision').value;
-  const field = document.getElementById('fnField').value;
-  const before = JSON.stringify(flowNodes());
-
-  let target;
-  if (id) {
-    target = findFlowNode(id);
-    if (!target) return;
-  } else {
-    target = { id: 'fn_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6), children: [], createdAt: new Date().toISOString() };
-    if (parentId) {
-      const parent = findFlowNode(parentId);
-      if (!parent) return;
-      parent.children = parent.children || [];
-      parent.children.push(target);
-    } else {
-      flowNodes().push(target);
-    }
-  }
-  target.title = title;
-  target.body = document.getElementById('fnBody').value.trim();
-  target.mode = mode;
-  target.division = mode === 'auto' ? division : '';
-  target.field = mode === 'auto' ? field : '';
-  target.children = target.children || [];
-  target.updatedAt = new Date().toISOString();
-
-  showLoading(true, '保存中...');
-  try {
-    await saveData(`save flow node: ${title}`);
-    closeModal('flowNodeModal');
-    renderFlowNav();
-    toast('保存しました', 'success');
-  } catch (e) {
-    console.error(e);
-    state.flowNodes = JSON.parse(before);
-    toast('保存失敗: ' + e.message, 'error');
-  } finally { showLoading(false); }
-}
-
-async function handleDeleteFlowNode() {
-  const id = document.getElementById('fnId').value;
-  const n = findFlowNode(id);
-  if (!n) return;
-  const kids = (n.children || []).length;
-  if (!confirm(`「${n.title}」を削除します。${kids ? `\n配下の選択肢 ${kids}件も一緒に削除されます。` : ''}\nよろしいですか?`)) return;
-  const before = JSON.stringify(flowNodes());
-  const list = siblingListOf(id);
-  const idx = list.findIndex(v => v.id === id);
-  if (idx >= 0) list.splice(idx, 1);
-  showLoading(true, '削除中...');
-  try {
-    await saveData(`delete flow node: ${n.title}`);
-    closeModal('flowNodeModal');
-    flowPath = flowPath.filter(st => st.t !== 'node' || findFlowNode(st.id));
-    renderFlowNav();
-    toast('削除しました', 'success');
-  } catch (e) {
-    console.error(e);
-    state.flowNodes = JSON.parse(before);
-    toast('削除失敗: ' + e.message, 'error');
-  } finally { showLoading(false); }
-}
-
-async function moveFlowNode(id, dir) {
-  const list = siblingListOf(id);
-  const i = list.findIndex(v => v.id === id);
-  const j = i + dir;
-  if (i < 0 || j < 0 || j >= list.length) return;
-  [list[i], list[j]] = [list[j], list[i]];
-  renderFlowNav();
-  try { await saveData('reorder flow nodes'); }
-  catch (e) { [list[i], list[j]] = [list[j], list[i]]; renderFlowNav(); toast('並べ替えの保存に失敗: ' + e.message, 'error'); }
-}
-
 /* ==================== init ==================== */
 function init() {
   document.getElementById('appVersion').textContent = APP_VERSION;
@@ -3175,11 +3191,13 @@ function init() {
   document.getElementById('btnSettings').onclick = openSettings;
   document.getElementById('btnSaveSettings').onclick = handleSaveSettings;
   document.getElementById('btnReload').onclick = reloadFromGitHub;
-  document.getElementById('btnFlowEditMode').onclick = toggleFlowEditMode;
-  document.getElementById('btnSaveFlowNode').onclick = handleSaveFlowNode;
-  document.getElementById('btnDeleteFlowNode').onclick = handleDeleteFlowNode;
-  document.getElementById('fnMode').addEventListener('change', fnSyncMode);
-  document.getElementById('fnDivision').addEventListener('change', () => populateFnFieldSelect(''));
+  document.getElementById('btnMmAddNode').onclick = () => openMmNodeEdit(null);
+  document.getElementById('btnMmConnect').onclick = toggleMmConnect;
+  document.getElementById('btnSaveMmNode').onclick = handleSaveMmNode;
+  document.getElementById('btnDeleteMmNode').onclick = handleDeleteMmNode;
+  document.getElementById('mmInspectionSelect').addEventListener('change', mmInspectionSelectChanged);
+  document.getElementById('btnMmEditFromDetail').onclick = mmEditFromDetail;
+  document.getElementById('btnMmDeleteFromDetail').onclick = mmDeleteFromDetail;
   document.getElementById('btnAdd').onclick = () => openEdit(null);
   document.getElementById('btnSaveRecord').onclick = handleSaveRecord;
   document.getElementById('btnDeleteRecord').onclick = handleDeleteRecord;
@@ -3253,13 +3271,13 @@ function init() {
     const lb = document.getElementById('lightbox');
     if (lb.classList.contains('open')) { closeLightbox(); return; }
     // 最前面のモーダルだけ閉じる (重なり順を考慮)
-    const order = ['flowNodeModal', 'productModal', 'inspectionModal', 'agencyModal', 'settingsModal', 'editModal', 'agencyDetailModal', 'productDetailModal', 'detailModal'];
+    const order = ['mmNodeEditModal', 'mmDetailModal', 'productModal', 'inspectionModal', 'agencyModal', 'settingsModal', 'editModal', 'agencyDetailModal', 'productDetailModal', 'detailModal'];
     for (const id of order) {
       if (document.getElementById(id).style.display === 'flex') { closeModalById(id); break; }
     }
   });
   // backdrop は「ダブルクリック」で閉じる (誤操作防止)
-  ['editModal', 'detailModal', 'agencyDetailModal', 'agencyModal', 'settingsModal', 'inspectionModal', 'productModal', 'productDetailModal', 'flowNodeModal'].forEach(id => {
+  ['editModal', 'detailModal', 'agencyDetailModal', 'agencyModal', 'settingsModal', 'inspectionModal', 'productModal', 'productDetailModal', 'mmNodeEditModal', 'mmDetailModal'].forEach(id => {
     const el = document.getElementById(id);
     el.addEventListener('dblclick', e => { if (e.target === el) closeModalById(id); });
   });
@@ -3278,11 +3296,6 @@ window.openAgencyDetail = openAgencyDetail;
 window.openInspectionEdit = openInspectionEdit;
 window.openProductEdit = openProductEdit;
 window.openProductDetail = openProductDetail;
-window.flowOpenNode = flowOpenNode;
-window.flowOpenInspection = flowOpenInspection;
-window.flowGoTo = flowGoTo;
-window.openFlowNodeEdit = openFlowNodeEdit;
-window.moveFlowNode = moveFlowNode;
 window.closeProductModal = closeProductModal;
 window.removeProductExistingImage = removeProductExistingImage;
 window.removeProductPendingImage = removeProductPendingImage;
