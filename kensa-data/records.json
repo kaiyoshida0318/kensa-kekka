@@ -411,17 +411,6 @@
   "flow": "",
   "flowNodes": [
     {
-      "id": "fn_1787538161970_llw3",
-      "children": [],
-      "createdAt": "2026-08-24T02:22:41.970Z",
-      "title": "買付前通関前に止められた",
-      "body": "test",
-      "mode": "manual",
-      "division": "",
-      "field": "",
-      "updatedAt": "2026-08-24T02:28:41.446Z"
-    },
-    {
       "id": "fn_1787538602417_auy9",
       "children": [],
       "createdAt": "2026-08-24T02:30:02.417Z",
@@ -431,6 +420,17 @@
       "division": "",
       "field": "",
       "updatedAt": "2026-08-24T02:30:02.417Z"
+    },
+    {
+      "id": "fn_1787538161970_llw3",
+      "children": [],
+      "createdAt": "2026-08-24T02:22:41.970Z",
+      "title": "買付前通関前に止められた",
+      "body": "test",
+      "mode": "manual",
+      "division": "",
+      "field": "",
+      "updatedAt": "2026-08-24T02:28:41.446Z"
     }
   ]
 }
