@@ -392,6 +392,45 @@ body {
 .date-range input { flex: 1; min-width: 0; }
 .date-range-sep { color: var(--text-muted); font-weight: 600; flex-shrink: 0; }
 
+/* 検査の基本的な流れ: ナビゲーター */
+.flow-nav-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; flex-wrap: wrap; }
+.flow-crumbs { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-size: 13px; }
+.crumb { border: none; background: none; color: var(--primary-dark); cursor: pointer; font-size: 13px; font-family: inherit; padding: 3px 6px; border-radius: 6px; }
+.crumb:hover { background: var(--primary-light); }
+.crumb.current { color: var(--text); font-weight: 600; padding: 3px 6px; }
+.crumb-sep { color: var(--text-light); }
+.btn-icon.active-mode { background: var(--primary); color: #fff; border-color: var(--primary); }
+
+.flow-intro { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 20px; max-width: 900px; margin-bottom: 20px; box-shadow: var(--shadow); }
+.flow-intro-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.flow-intro-title { font-size: 12px; font-weight: 700; color: var(--text-light); flex: 1; }
+
+.flow-note { max-width: 900px; background: var(--primary-light); border: 1px solid var(--border); border-left: 3px solid var(--primary); border-radius: var(--radius-sm); padding: 14px 18px; font-size: 13px; line-height: 1.9; white-space: pre-wrap; margin-bottom: 16px; }
+.flow-choices { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px; max-width: 1100px; }
+.flow-choice-wrap { position: relative; }
+.flow-choice {
+  width: 100%; display: flex; align-items: center; gap: 12px; text-align: left;
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 16px 18px; cursor: pointer; font-family: inherit; transition: all .15s; box-shadow: var(--shadow);
+}
+.flow-choice:hover { border-color: var(--primary); transform: translateY(-1px); box-shadow: var(--shadow-lg); }
+.flow-choice-main { flex: 1; min-width: 0; }
+.flow-choice-title { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 3px; }
+.flow-choice-sub { font-size: 11px; color: var(--text-light); }
+.flow-choice-arrow { color: var(--text-light); font-size: 20px; line-height: 1; }
+.flow-choice-ops { position: absolute; top: 6px; right: 6px; display: flex; gap: 3px; background: var(--surface); border-radius: 6px; padding: 2px; }
+.flow-choice-ops .doc-btn:disabled { opacity: .35; cursor: default; }
+.flow-empty { max-width: 900px; font-size: 13px; color: var(--text-light); padding: 18px; border: 1px dashed var(--border); border-radius: var(--radius); background: var(--bg); }
+.flow-edit-bar { display: flex; gap: 8px; margin-top: 16px; }
+
+.flow-step-card { max-width: 900px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px 24px; box-shadow: var(--shadow); }
+.flow-step-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; padding-bottom: 14px; border-bottom: 1px solid var(--border-light); margin-bottom: 14px; }
+.flow-step-title { font-size: 17px; font-weight: 700; }
+.flow-step-meta { font-size: 12px; color: var(--text-light); margin-top: 5px; }
+.flow-step-label { font-size: 11px; font-weight: 700; color: var(--text-light); margin: 14px 0 6px; }
+.flow-step-body { font-size: 13px; line-height: 1.95; white-space: pre-wrap; }
+.flow-step-body.empty { color: var(--text-light); }
+
 /* 検査の基本の流れ (タブ) */
 .flow-panel-bar { display: flex; align-items: center; justify-content: flex-end; gap: 12px; margin-bottom: 14px; }
 .flow-panel-title { font-size: 16px; font-weight: 700; }
@@ -588,7 +627,7 @@ body {
   <div class="header-spacer"></div>
   <div class="header-actions">
     <span class="conn-pill off" id="connPill">未接続</span>
-    <span class="app-version" id="appVersion">v1.16.1</span>
+    <span class="app-version" id="appVersion">v1.18.0</span>
     <button class="btn-icon" id="btnReload" title="GitHubから再読み込み">🔄 更新</button>
     <button class="btn-icon" id="btnSettings" title="設定">⚙️ 設定</button>
   </div>
@@ -676,21 +715,29 @@ body {
   <div id="inspectionTableWrap" style="display:none"></div>
   <div id="productTableWrap" style="display:none"></div>
   <div id="flowPanel" style="display:none">
-    <div class="flow-panel-bar">
-      <div class="flow-panel-actions" id="flowViewActions">
-        <button class="btn-add" id="btnFlowEdit">✏️ 編集</button>
-      </div>
-      <div class="flow-panel-actions" id="flowEditActions" style="display:none">
-        <button class="btn-secondary" id="btnFlowCancel">キャンセル</button>
-        <button class="btn-primary" id="btnFlowSave">保存</button>
+    <div class="flow-nav-bar">
+      <div class="flow-crumbs" id="flowCrumbs"></div>
+      <div class="flow-nav-actions">
+        <button class="btn-icon" id="btnFlowEditMode">✏️ 編集モード</button>
       </div>
     </div>
-    <div class="flow-card">
+    <div class="flow-intro" id="flowIntroWrap">
+      <div class="flow-intro-head">
+        <span class="flow-intro-title">はじめに</span>
+        <span class="flow-panel-actions" id="flowViewActions">
+          <button class="btn-icon" id="btnFlowEdit">✏️ 編集</button>
+        </span>
+        <span class="flow-panel-actions" id="flowEditActions" style="display:none">
+          <button class="btn-secondary" id="btnFlowCancel">キャンセル</button>
+          <button class="btn-primary" id="btnFlowSave">保存</button>
+        </span>
+      </div>
       <div id="flowView" class="flow-view"></div>
       <div id="flowEdit" style="display:none">
-        <textarea id="flowText" class="flow-textarea" placeholder="検査全体のおおまかな流れを書いておけます。&#10;&#10;例:&#10;1. 商品を選定する&#10;2. 検査機関に見積・申込&#10;3. サンプルを送付&#10;4. 結果を受領して合否を判定&#10;5. このツールに記録として保存"></textarea>
+        <textarea id="flowText" class="flow-textarea" placeholder="検査全体のおおまかな流れや前提を書いておけます。&#10;（下の選択肢から進むと、状況ごとの検査と手順が開きます）"></textarea>
       </div>
     </div>
+    <div id="flowBody"></div>
   </div>
   <div class="empty-state" id="emptyState" style="display:none"></div>
 </main>
@@ -859,6 +906,56 @@ body {
   </div>
 </div>
 
+<!-- ============ Flow Node Modal ============ -->
+<div class="modal-backdrop" id="flowNodeModal" style="display:none">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="flowNodeModalTitle">選択肢を追加</h2>
+      <button class="btn-close" onclick="closeModal('flowNodeModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="fnId">
+      <input type="hidden" id="fnParent">
+      <div class="form-row">
+        <label>見出し <span style="color:var(--fail)">*</span></label>
+        <input type="text" id="fnTitle" placeholder="例: ラクマート買付前・通関前で止められた">
+      </div>
+      <div class="form-row">
+        <label>説明（任意）</label>
+        <textarea id="fnBody" placeholder="この選択肢を選んだときに上部に表示される説明。&#10;一次対応や前提などを書けます"></textarea>
+      </div>
+      <div class="form-row">
+        <label>次に出すもの</label>
+        <select id="fnMode">
+          <option value="manual">この下に選択肢を手で作る</option>
+          <option value="auto">検査の種類から自動で並べる</option>
+          <option value="leaf">説明だけ表示して終わり</option>
+        </select>
+      </div>
+      <div class="form-2col" id="fnAutoWrap" style="display:none">
+        <div class="form-row">
+          <label>検査区分</label>
+          <select id="fnDivision">
+            <option value="">（すべて）</option>
+            <option value="訴求目的検査">訴求目的検査</option>
+            <option value="必要検査">必要検査</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label>検査分野（任意）</label>
+          <select id="fnField"><option value="">（すべて）</option></select>
+          <small class="form-hint">指定するとその分野だけに絞られます</small>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-danger" id="btnDeleteFlowNode" style="margin-right:auto;display:none">🗑️ この選択肢を削除</button>
+        <button class="btn-secondary" onclick="closeModal('flowNodeModal')">キャンセル</button>
+        <button class="btn-primary" id="btnSaveFlowNode">保存</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ============ Product Detail Modal ============ -->
 <div class="modal-backdrop" id="productDetailModal" style="display:none">
   <div class="modal modal-lg">
@@ -956,6 +1053,11 @@ body {
         <small class="form-hint">検査結果でこの検査を選ぶと、ここの機関が自動で入ります</small>
       </div>
       <div class="form-row">
+        <label>検査の手順</label>
+        <textarea id="insSteps" placeholder="例:&#10;1. 検査機関に見積を依頼&#10;2. 申込書を提出&#10;3. サンプルを2点送付&#10;4. 約10営業日で結果票を受領" style="min-height:130px"></textarea>
+        <small class="form-hint">「検査の基本的な流れ」から辿ったときに、ここの内容がカードとして表示されます</small>
+      </div>
+      <div class="form-row">
         <label>メモ</label>
         <textarea id="insNote" placeholder="規格・基準値・注意点など"></textarea>
       </div>
@@ -1026,14 +1128,14 @@ body {
 'use strict';
 
 /* ======================================================================
-   検査結果保存くん — v1.16.1
+   検査結果保存くん — v1.18.0
    データ保存: GitHub (Contents API)
      - データ:   kensa-data/records.json  { version, records[], agencies[], categories[], flow }
      - 画像:     kensa-data/images/{recordId}/{filename}      (サムネイル1枚)
      - 書類:     kensa-data/files/{recordId}/{slot}/{filename} (4種)
    ====================================================================== */
 
-const APP_VERSION = 'v1.16.1';
+const APP_VERSION = 'v1.18.0';
 const LS_AUTH = 'kensa_auth';
 const DATA_PATH = 'kensa-data/records.json';
 
@@ -1051,7 +1153,7 @@ const DIVISIONS = ['訴求目的検査', '必要検査'];
 
 // ----- state -----
 let auth = { pat: '', owner: '', repo: '', branch: 'main' };
-let state = { records: [], products: [], agencies: [], categories: [], inspections: [], flow: '', sha: null, _loadFailed: false, _wasEmpty: false };
+let state = { records: [], products: [], agencies: [], categories: [], inspections: [], flow: '', flowNodes: [], sha: null, _loadFailed: false, _wasEmpty: false };
 let currentTab = 'results';
 let filterResult = 'all';
 let filterRecDivision = 'all';
@@ -1135,6 +1237,7 @@ async function loadRecords() {
       inspections: Array.isArray(json.inspections) ? json.inspections : [],
       products: Array.isArray(json.products) ? json.products : [],
       flow: typeof json.flow === 'string' ? json.flow : '',
+      flowNodes: Array.isArray(json.flowNodes) ? json.flowNodes : [],
       sha: data.sha
     };
   } catch (e) {
@@ -1148,7 +1251,7 @@ async function saveData(message, retryCount = 0) {
   if (state._loadFailed || state._wasEmpty) {
     throw new Error('データの読み込みに失敗しているため、上書き保存を中止しました。「🔄更新」で再読み込みしてください。');
   }
-  const content = JSON.stringify({ version: APP_VERSION, records: state.records, agencies: state.agencies, categories: state.categories || [], inspections: state.inspections || [], products: state.products || [], flow: state.flow || '' }, null, 2);
+  const content = JSON.stringify({ version: APP_VERSION, records: state.records, agencies: state.agencies, categories: state.categories || [], inspections: state.inspections || [], products: state.products || [], flow: state.flow || '', flowNodes: state.flowNodes || [] }, null, 2);
   const body = { message: message || 'update data', content: b64encode(content), branch: auth.branch };
   if (state.sha) body.sha = state.sha;
   const res = await ghFetch(`contents/${DATA_PATH}`, { method: 'PUT', body: JSON.stringify(body) });
@@ -1482,7 +1585,7 @@ function setTab(t) {
   document.getElementById('toolbarAgencies').style.display = (t === 'agencies') ? '' : 'none';
   document.getElementById('toolbarInspections').style.display = (t === 'inspections') ? '' : 'none';
   document.getElementById('toolbarProducts').style.display = (t === 'products') ? '' : 'none';
-  if (t === 'flow') flowSetMode('view');
+  if (t === 'flow') { flowSetMode('view'); flowPath = []; }
   render();
 }
 
@@ -2169,6 +2272,7 @@ function openInspectionEdit(id) {
   document.getElementById('insField').value = x.field || '';
   document.getElementById('insItem').value = x.item || '';
   populateInsAgencySelect(x.agencyId || '');
+  document.getElementById('insSteps').value = x.steps || '';
   document.getElementById('insNote').value = x.note || '';
   document.getElementById('btnDeleteInspection').style.display = isNew ? 'none' : 'inline-block';
   const recs = isNew ? [] : recordsForInspection(x);
@@ -2194,6 +2298,7 @@ async function handleSaveInspection() {
     field: document.getElementById('insField').value.trim(),
     item: document.getElementById('insItem').value.trim(),
     agencyId: document.getElementById('insAgency').value || '',
+    steps: document.getElementById('insSteps').value.trim(),
     note: document.getElementById('insNote').value.trim(),
     createdAt: (existing && existing.createdAt) || new Date().toISOString(),
     updatedAt: new Date().toISOString()
@@ -2732,7 +2837,98 @@ async function reloadFromGitHub() {
   }
 }
 
-/* ==================== 検査の基本の流れ ==================== */
+/* ==================== UI utils ==================== */
+let toastTimer = null;
+function toast(msg, type) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'toast show' + (type ? ' ' + type : '');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { el.className = 'toast' + (type ? ' ' + type : ''); }, 3200);
+}
+
+function showLoading(on, text) {
+  const o = document.getElementById('loadingOverlay');
+  if (text) document.getElementById('loadingText').textContent = text;
+  o.classList.toggle('show', !!on);
+}
+
+function showModal(id) { document.getElementById(id).style.display = 'flex'; }
+function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+// Esc / 背景ダブルクリック用: 編集モーダルは詳細へ戻す
+function closeModalById(id) {
+  if (id === 'editModal') return closeEditModal();
+  if (id === 'agencyModal') return closeAgencyModal();
+  if (id === 'productModal') return closeProductModal();
+  closeModal(id);
+}
+
+function openLightbox(url) {
+  document.getElementById('lightboxImg').src = url;
+  document.getElementById('lightbox').classList.add('open');
+}
+function closeLightbox() {
+  document.getElementById('lightbox').classList.remove('open');
+  document.getElementById('lightboxImg').src = '';
+}
+
+function goHome() {
+  setTab('results');
+  searchText = ''; document.getElementById('searchInput').value = '';
+  setFilter('all');
+}
+
+function setFilter(r) {
+  filterResult = r;
+  document.querySelectorAll('#resultFilter button').forEach(b => b.classList.toggle('active', b.dataset.result === r));
+  if (currentTab === 'results') render();
+}
+
+/* ==================== 検査の基本的な流れ (ナビゲーター) ==================== */
+let flowPath = [];          // [{t:'node'|'ins', id}]
+let flowEditMode = false;
+
+function flowNodes() { return Array.isArray(state.flowNodes) ? state.flowNodes : (state.flowNodes = []); }
+function findFlowNode(id, list) {
+  for (const n of (list || flowNodes())) {
+    if (n.id === id) return n;
+    const hit = findFlowNode(id, n.children || []);
+    if (hit) return hit;
+  }
+  return null;
+}
+function findFlowParent(id, list, parent) {
+  for (const n of (list || flowNodes())) {
+    if (n.id === id) return parent || null;
+    const hit = findFlowParent(id, n.children || [], n);
+    if (hit !== undefined && hit !== null) return hit;
+    if (hit === null && (n.children || []).some(c => c.id === id)) return n;
+  }
+  return null;
+}
+function siblingListOf(id) {
+  const parent = findFlowParent(id);
+  return parent ? (parent.children = parent.children || []) : flowNodes();
+}
+// 自動展開ノードに該当する検査の種類
+function autoInspections(node) {
+  return inspectionList().filter(x =>
+    (!node.division || (x.division || '').trim() === node.division) &&
+    (!node.field || (x.field || '').trim() === node.field))
+    .sort((a, b) => (a.field || '').localeCompare(b.field || '', 'ja') || (a.item || '').localeCompare(b.item || '', 'ja'));
+}
+
+/* ---- 表示 ---- */
+function renderFlowPanel() {
+  document.getElementById('grid').style.display = 'none';
+  document.getElementById('agencyTableWrap').style.display = 'none';
+  document.getElementById('inspectionTableWrap').style.display = 'none';
+  document.getElementById('productTableWrap').style.display = 'none';
+  document.getElementById('emptyState').style.display = 'none';
+  renderFlowView();
+  renderFlowNav();
+}
+
 function renderFlowView() {
   const v = document.getElementById('flowView');
   if (state.flow && state.flow.trim()) {
@@ -2740,15 +2936,15 @@ function renderFlowView() {
     v.textContent = state.flow;
   } else {
     v.className = 'flow-view empty';
-    v.textContent = 'まだ記入されていません。「✏️ 編集」から検査のおおまかな流れを書けます。';
+    v.textContent = 'まだ記入されていません。「✏️ 編集」から前提やおおまかな流れを書けます。';
   }
 }
 function flowSetMode(mode) {
   const edit = mode === 'edit';
-  document.getElementById('flowView').style.display = edit ? 'none' : 'block';
-  document.getElementById('flowEdit').style.display = edit ? 'block' : 'none';
-  document.getElementById('flowViewActions').style.display = edit ? 'none' : 'flex';
-  document.getElementById('flowEditActions').style.display = edit ? 'flex' : 'none';
+  document.getElementById('flowView').style.display = edit ? 'none' : '';
+  document.getElementById('flowEdit').style.display = edit ? '' : 'none';
+  document.getElementById('flowViewActions').style.display = edit ? 'none' : '';
+  document.getElementById('flowEditActions').style.display = edit ? '' : 'none';
   if (edit) document.getElementById('flowText').value = state.flow || '';
 }
 async function handleFlowSave() {
@@ -2764,48 +2960,268 @@ async function handleFlowSave() {
     toast('保存しました', 'success');
   } catch (e) {
     state.flow = prev;
-    console.error(e);
     toast('保存失敗: ' + e.message, 'error');
-  } finally {
-    showLoading(false);
+  } finally { showLoading(false); }
+}
+
+function renderFlowNav() {
+  const btn = document.getElementById('btnFlowEditMode');
+  btn.textContent = flowEditMode ? '✅ 編集モードを終了' : '✏️ 編集モード';
+  btn.classList.toggle('active-mode', flowEditMode);
+  // 現在地
+  const last = flowPath[flowPath.length - 1];
+  const atRoot = !last;
+  document.getElementById('flowIntroWrap').style.display = atRoot ? '' : 'none';
+
+  // パンくず
+  const crumbs = ['<button class="crumb" onclick="flowGoTo(0)">🏠 はじめ</button>'];
+  flowPath.forEach((step, i) => {
+    const label = step.t === 'ins'
+      ? ((inspectionList().find(x => x.id === step.id) || {}).item || '検査')
+      : ((findFlowNode(step.id) || {}).title || '選択肢');
+    crumbs.push('<span class="crumb-sep">›</span>');
+    crumbs.push(i === flowPath.length - 1
+      ? `<span class="crumb current">${esc(label)}</span>`
+      : `<button class="crumb" onclick="flowGoTo(${i + 1})">${esc(label)}</button>`);
+  });
+  document.getElementById('flowCrumbs').innerHTML = crumbs.join('');
+
+  const body = document.getElementById('flowBody');
+
+  // 検査の種類カード(終端)
+  if (last && last.t === 'ins') {
+    const x = inspectionList().find(v => v.id === last.id);
+    body.innerHTML = x ? renderInspectionStepCard(x) : '<div class="flow-empty">この検査は削除されたようです。</div>';
+    return;
   }
+
+  const node = last ? findFlowNode(last.id) : null;
+  let html = '';
+  if (node && (node.body || '').trim()) {
+    html += `<div class="flow-note">${esc(node.body)}</div>`;
+  }
+
+  if (node && node.mode === 'auto') {
+    const rows = autoInspections(node);
+    html += rows.length
+      ? `<div class="flow-choices">${rows.map(x => `
+          <button class="flow-choice" onclick="flowOpenInspection('${x.id}')">
+            <div class="flow-choice-main">
+              <div class="flow-choice-title">${esc(x.item || '(検査項目なし)')}</div>
+              <div class="flow-choice-sub">${esc(x.division || '')}${x.field ? ' / ' + esc(x.field) : ''}${x.agencyId && agencyNameById(x.agencyId) ? ' ・ ' + esc(agencyNameById(x.agencyId)) : ''}</div>
+            </div>
+            <span class="flow-choice-arrow">›</span>
+          </button>`).join('')}</div>`
+      : `<div class="flow-empty">条件に合う検査がまだ登録されていません。「検査の種類」タブで追加すると、ここに自動で並びます。</div>`;
+    body.innerHTML = html;
+    return;
+  }
+
+  if (node && node.mode === 'leaf') {
+    if (!(node.body || '').trim()) html += '<div class="flow-empty">説明がまだ書かれていません。</div>';
+    if (flowEditMode) html += flowEditToolbar(node.id, true);
+    body.innerHTML = html;
+    return;
+  }
+
+  // 手動の選択肢
+  const children = node ? (node.children || []) : flowNodes();
+  if (children.length) {
+    html += `<div class="flow-choices">${children.map((c, i) => `
+      <div class="flow-choice-wrap">
+        <button class="flow-choice" onclick="flowOpenNode('${c.id}')">
+          <div class="flow-choice-main">
+            <div class="flow-choice-title">${esc(c.title || '(見出しなし)')}</div>
+            ${flowChoiceSub(c)}
+          </div>
+          <span class="flow-choice-arrow">›</span>
+        </button>
+        ${flowEditMode ? `<div class="flow-choice-ops">
+          <button class="doc-btn" title="上へ" onclick="moveFlowNode('${c.id}',-1)"${i === 0 ? ' disabled' : ''}>↑</button>
+          <button class="doc-btn" title="下へ" onclick="moveFlowNode('${c.id}',1)"${i === children.length - 1 ? ' disabled' : ''}>↓</button>
+          <button class="doc-btn" title="編集" onclick="openFlowNodeEdit('${c.id}')">✏️</button>
+        </div>` : ''}
+      </div>`).join('')}</div>`;
+  } else if (!(node && (node.body || '').trim())) {
+    html += flowEditMode
+      ? '<div class="flow-empty">まだ選択肢がありません。下の「＋ 選択肢を追加」から作成してください。</div>'
+      : '<div class="flow-empty">まだ選択肢が登録されていません。右上の「✏️ 編集モード」から追加できます。</div>';
+  }
+  if (flowEditMode) html += flowEditToolbar(node ? node.id : '', !!node);
+  body.innerHTML = html;
 }
 
-/* ==================== UI helpers ==================== */
-function showModal(id) { document.getElementById(id).style.display = 'flex'; }
-function closeModal(id) { document.getElementById(id).style.display = 'none'; }
-// Esc / 背景ダブルクリック用: 編集モーダルは詳細へ戻す
-function closeModalById(id) {
-  if (id === 'editModal') return closeEditModal();
-  if (id === 'agencyModal') return closeAgencyModal();
-  if (id === 'productModal') return closeProductModal();
-  closeModal(id);
+function flowChoiceSub(c) {
+  if (c.mode === 'auto') {
+    const n = autoInspections(c).length;
+    return `<div class="flow-choice-sub">${esc(c.division || 'すべての区分')}${c.field ? ' / ' + esc(c.field) : ''} の検査 ${n}件</div>`;
+  }
+  if (c.mode === 'leaf') return `<div class="flow-choice-sub">${esc((c.body || '').split('\n')[0].slice(0, 40) || '説明')}</div>`;
+  const n = (c.children || []).length;
+  return `<div class="flow-choice-sub">${n ? n + 'つの選択肢' : '（中身は未作成）'}</div>`;
 }
-function goHome() {
-  setTab('results');
-  searchText = ''; document.getElementById('searchInput').value = '';
-  setFilter('all');
-}
-function openLightbox(url) { document.getElementById('lightboxImg').src = url; document.getElementById('lightbox').classList.add('open'); }
-function closeLightbox() { document.getElementById('lightbox').classList.remove('open'); document.getElementById('lightboxImg').src = ''; }
 
-let toastTimer = null;
-function toast(msg, type) {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.className = 'toast show' + (type ? ' ' + type : '');
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => { t.className = 'toast'; }, 2800);
+function flowEditToolbar(parentId, isChild) {
+  return `<div class="flow-edit-bar">
+    <button class="btn-add" onclick="openFlowNodeEdit(null,'${parentId}')">＋ 選択肢を追加</button>
+    ${isChild ? `<button class="btn-icon" onclick="openFlowNodeEdit('${parentId}')">✏️ この階層を編集</button>` : ''}
+  </div>`;
 }
-function showLoading(on, text) {
-  const o = document.getElementById('loadingOverlay');
-  if (text) document.getElementById('loadingText').textContent = text;
-  o.classList.toggle('show', !!on);
+
+function renderInspectionStepCard(x) {
+  const ag = x.agencyId && agencyNameById(x.agencyId);
+  return `<div class="flow-step-card">
+    <div class="flow-step-head">
+      <div>
+        <div class="flow-step-title">${esc(x.item || '(検査項目なし)')}</div>
+        <div class="flow-step-meta">
+          <span class="ag-ins-div">${esc(x.division || '未設定')}</span>${esc(x.field || '—')}
+          ${ag ? `<span class="ag-ins-sep">/</span><span class="link-agency" onclick="openAgencyDetail('${escAttr(x.agencyId)}')">${esc(ag)} 🔎</span>` : ''}
+        </div>
+      </div>
+      <button class="btn-icon" onclick="openInspectionEdit('${x.id}')">✏️ 手順を編集</button>
+    </div>
+    <div class="flow-step-label">検査の手順</div>
+    <div class="flow-step-body${(x.steps || '').trim() ? '' : ' empty'}">${(x.steps || '').trim()
+      ? esc(x.steps)
+      : 'まだ手順が書かれていません。「✏️ 手順を編集」から追加できます。'}</div>
+    ${(x.note || '').trim() ? `<div class="flow-step-label">メモ</div><div class="flow-step-body">${esc(x.note)}</div>` : ''}
+  </div>`;
 }
-function setFilter(r) {
-  filterResult = r;
-  document.querySelectorAll('#resultFilter button').forEach(b => b.classList.toggle('active', b.dataset.result === r));
-  if (currentTab === 'results') render();
+
+/* ---- 遷移 ---- */
+function flowOpenNode(id) {
+  const n = findFlowNode(id);
+  if (!n) return;
+  flowPath.push({ t: 'node', id });
+  renderFlowNav();
+}
+function flowOpenInspection(id) {
+  flowPath.push({ t: 'ins', id });
+  renderFlowNav();
+}
+function flowGoTo(depth) {
+  flowPath = flowPath.slice(0, depth);
+  renderFlowNav();
+}
+function toggleFlowEditMode() {
+  flowEditMode = !flowEditMode;
+  renderFlowNav();
+}
+
+/* ---- 編集 ---- */
+function populateFnFieldSelect(selected) {
+  const sel = document.getElementById('fnField');
+  const div = document.getElementById('fnDivision').value;
+  const flds = masterFields(div);
+  if (selected && !flds.includes(selected)) flds.push(selected);
+  sel.innerHTML = ['<option value="">（すべて）</option>']
+    .concat(flds.map(f => `<option value="${escAttr(f)}">${esc(f)}</option>`)).join('');
+  sel.value = selected || '';
+}
+function fnSyncMode() {
+  document.getElementById('fnAutoWrap').style.display =
+    document.getElementById('fnMode').value === 'auto' ? '' : 'none';
+}
+
+function openFlowNodeEdit(id, parentId) {
+  const isNew = !id;
+  const n = isNew ? {} : (findFlowNode(id) || {});
+  document.getElementById('flowNodeModalTitle').textContent = isNew ? '選択肢を追加' : '選択肢を編集';
+  document.getElementById('fnId').value = id || '';
+  document.getElementById('fnParent').value = isNew ? (parentId || '') : '';
+  document.getElementById('fnTitle').value = n.title || '';
+  document.getElementById('fnBody').value = n.body || '';
+  document.getElementById('fnMode').value = n.mode || 'manual';
+  document.getElementById('fnDivision').value = n.division || '';
+  populateFnFieldSelect(n.field || '');
+  fnSyncMode();
+  document.getElementById('btnDeleteFlowNode').style.display = isNew ? 'none' : 'inline-block';
+  showModal('flowNodeModal');
+}
+
+async function handleSaveFlowNode() {
+  const title = document.getElementById('fnTitle').value.trim();
+  if (!title) { toast('見出しを入力してください', 'error'); return; }
+  if (!auth.owner || !auth.repo) { toast('先に⚙️設定でGitHub保存先を登録してください', 'error'); openSettings(); return; }
+  if (!auth.pat) { toast('保存にはPAT(トークン)が必要です。⚙️設定から登録してください', 'error'); openSettings(); return; }
+
+  const id = document.getElementById('fnId').value;
+  const parentId = document.getElementById('fnParent').value;
+  const mode = document.getElementById('fnMode').value;
+  const division = document.getElementById('fnDivision').value;
+  const field = document.getElementById('fnField').value;
+  const before = JSON.stringify(flowNodes());
+
+  let target;
+  if (id) {
+    target = findFlowNode(id);
+    if (!target) return;
+  } else {
+    target = { id: 'fn_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6), children: [], createdAt: new Date().toISOString() };
+    if (parentId) {
+      const parent = findFlowNode(parentId);
+      if (!parent) return;
+      parent.children = parent.children || [];
+      parent.children.push(target);
+    } else {
+      flowNodes().push(target);
+    }
+  }
+  target.title = title;
+  target.body = document.getElementById('fnBody').value.trim();
+  target.mode = mode;
+  target.division = mode === 'auto' ? division : '';
+  target.field = mode === 'auto' ? field : '';
+  target.children = target.children || [];
+  target.updatedAt = new Date().toISOString();
+
+  showLoading(true, '保存中...');
+  try {
+    await saveData(`save flow node: ${title}`);
+    closeModal('flowNodeModal');
+    renderFlowNav();
+    toast('保存しました', 'success');
+  } catch (e) {
+    console.error(e);
+    state.flowNodes = JSON.parse(before);
+    toast('保存失敗: ' + e.message, 'error');
+  } finally { showLoading(false); }
+}
+
+async function handleDeleteFlowNode() {
+  const id = document.getElementById('fnId').value;
+  const n = findFlowNode(id);
+  if (!n) return;
+  const kids = (n.children || []).length;
+  if (!confirm(`「${n.title}」を削除します。${kids ? `\n配下の選択肢 ${kids}件も一緒に削除されます。` : ''}\nよろしいですか?`)) return;
+  const before = JSON.stringify(flowNodes());
+  const list = siblingListOf(id);
+  const idx = list.findIndex(v => v.id === id);
+  if (idx >= 0) list.splice(idx, 1);
+  showLoading(true, '削除中...');
+  try {
+    await saveData(`delete flow node: ${n.title}`);
+    closeModal('flowNodeModal');
+    flowPath = flowPath.filter(st => st.t !== 'node' || findFlowNode(st.id));
+    renderFlowNav();
+    toast('削除しました', 'success');
+  } catch (e) {
+    console.error(e);
+    state.flowNodes = JSON.parse(before);
+    toast('削除失敗: ' + e.message, 'error');
+  } finally { showLoading(false); }
+}
+
+async function moveFlowNode(id, dir) {
+  const list = siblingListOf(id);
+  const i = list.findIndex(v => v.id === id);
+  const j = i + dir;
+  if (i < 0 || j < 0 || j >= list.length) return;
+  [list[i], list[j]] = [list[j], list[i]];
+  renderFlowNav();
+  try { await saveData('reorder flow nodes'); }
+  catch (e) { [list[i], list[j]] = [list[j], list[i]]; renderFlowNav(); toast('並べ替えの保存に失敗: ' + e.message, 'error'); }
 }
 
 /* ==================== init ==================== */
@@ -2817,6 +3233,11 @@ function init() {
   document.getElementById('btnSettings').onclick = openSettings;
   document.getElementById('btnSaveSettings').onclick = handleSaveSettings;
   document.getElementById('btnReload').onclick = reloadFromGitHub;
+  document.getElementById('btnFlowEditMode').onclick = toggleFlowEditMode;
+  document.getElementById('btnSaveFlowNode').onclick = handleSaveFlowNode;
+  document.getElementById('btnDeleteFlowNode').onclick = handleDeleteFlowNode;
+  document.getElementById('fnMode').addEventListener('change', fnSyncMode);
+  document.getElementById('fnDivision').addEventListener('change', () => populateFnFieldSelect(''));
   document.getElementById('btnFlowEdit').onclick = () => flowSetMode('edit');
   document.getElementById('btnFlowCancel').onclick = () => flowSetMode('view');
   document.getElementById('btnFlowSave').onclick = handleFlowSave;
@@ -2893,13 +3314,13 @@ function init() {
     const lb = document.getElementById('lightbox');
     if (lb.classList.contains('open')) { closeLightbox(); return; }
     // 最前面のモーダルだけ閉じる (重なり順を考慮)
-    const order = ['productModal', 'inspectionModal', 'agencyModal', 'settingsModal', 'editModal', 'agencyDetailModal', 'productDetailModal', 'detailModal'];
+    const order = ['flowNodeModal', 'productModal', 'inspectionModal', 'agencyModal', 'settingsModal', 'editModal', 'agencyDetailModal', 'productDetailModal', 'detailModal'];
     for (const id of order) {
       if (document.getElementById(id).style.display === 'flex') { closeModalById(id); break; }
     }
   });
   // backdrop は「ダブルクリック」で閉じる (誤操作防止)
-  ['editModal', 'detailModal', 'agencyDetailModal', 'agencyModal', 'settingsModal', 'inspectionModal', 'productModal', 'productDetailModal'].forEach(id => {
+  ['editModal', 'detailModal', 'agencyDetailModal', 'agencyModal', 'settingsModal', 'inspectionModal', 'productModal', 'productDetailModal', 'flowNodeModal'].forEach(id => {
     const el = document.getElementById(id);
     el.addEventListener('dblclick', e => { if (e.target === el) closeModalById(id); });
   });
@@ -2918,6 +3339,11 @@ window.openAgencyDetail = openAgencyDetail;
 window.openInspectionEdit = openInspectionEdit;
 window.openProductEdit = openProductEdit;
 window.openProductDetail = openProductDetail;
+window.flowOpenNode = flowOpenNode;
+window.flowOpenInspection = flowOpenInspection;
+window.flowGoTo = flowGoTo;
+window.openFlowNodeEdit = openFlowNodeEdit;
+window.moveFlowNode = moveFlowNode;
 window.closeProductModal = closeProductModal;
 window.removeProductExistingImage = removeProductExistingImage;
 window.removeProductPendingImage = removeProductPendingImage;
