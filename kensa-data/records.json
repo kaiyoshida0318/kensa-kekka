@@ -422,13 +422,13 @@
     },
     {
       "id": "fn_mt6xj8clq4k68x",
-      "x": 827,
-      "y": 247,
+      "x": 291,
+      "y": 245,
       "createdAt": "2026-08-24T07:43:39.525Z",
       "title": "test",
       "body": "test",
       "inspectionId": "",
-      "updatedAt": "2026-08-24T07:43:39.525Z"
+      "updatedAt": "2026-08-24T07:43:41.906Z"
     }
   ],
   "flowEdges": []
