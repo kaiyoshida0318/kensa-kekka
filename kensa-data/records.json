@@ -415,27 +415,11 @@
       "title": "LPに検査を載せたい",
       "body": "tes",
       "inspectionId": "",
-      "x": 311,
-      "y": 136,
+      "x": 277,
+      "y": 184,
       "createdAt": "2026-08-24T05:58:36.298Z",
-      "updatedAt": "2026-08-24T07:43:57.083Z"
-    },
-    {
-      "id": "fn_mt6xj8clq4k68x",
-      "x": 569,
-      "y": 307,
-      "createdAt": "2026-08-24T07:43:39.525Z",
-      "title": "test",
-      "body": "test",
-      "inspectionId": "",
-      "updatedAt": "2026-08-24T07:44:02.288Z"
+      "updatedAt": "2026-08-24T08:29:59.842Z"
     }
   ],
-  "flowEdges": [
-    {
-      "id": "fe_mt6xje7577pan8",
-      "from": "fn_mt6xj8clq4k68x",
-      "to": "fn_1787551116298_0egu"
-    }
-  ]
+  "flowEdges": []
 }
