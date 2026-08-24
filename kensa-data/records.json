@@ -1,5 +1,5 @@
 {
-  "version": "v1.18.1",
+  "version": "v1.19.0",
   "records": [
     {
       "id": "rec_1785224421374_m550",
@@ -412,14 +412,24 @@
   "flowNodes": [
     {
       "id": "fn_1787551116298_0egu",
-      "children": [],
-      "createdAt": "2026-08-24T05:58:36.298Z",
       "title": "LPに検査を載せたい",
       "body": "tes",
-      "mode": "manual",
-      "division": "",
-      "field": "",
+      "inspectionId": "",
+      "x": 20,
+      "y": 20,
+      "createdAt": "2026-08-24T05:58:36.298Z",
       "updatedAt": "2026-08-24T05:58:36.298Z"
+    },
+    {
+      "id": "fn_mt6xj8clq4k68x",
+      "x": 827,
+      "y": 247,
+      "createdAt": "2026-08-24T07:43:39.525Z",
+      "title": "test",
+      "body": "test",
+      "inspectionId": "",
+      "updatedAt": "2026-08-24T07:43:39.525Z"
     }
-  ]
+  ],
+  "flowEdges": []
 }
