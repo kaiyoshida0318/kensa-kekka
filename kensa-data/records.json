@@ -1,5 +1,5 @@
 {
-  "version": "v1.16.1",
+  "version": "v1.18.0",
   "records": [
     {
       "id": "rec_1785224421374_m550",
@@ -408,5 +408,18 @@
       "updatedAt": "2026-08-12T01:51:27.713Z"
     }
   ],
-  "flow": ""
+  "flow": "",
+  "flowNodes": [
+    {
+      "id": "fn_1787538161970_llw3",
+      "children": [],
+      "createdAt": "2026-08-24T02:22:41.970Z",
+      "title": "買付前通関前に止められた",
+      "body": "test",
+      "mode": "auto",
+      "division": "必要検査",
+      "field": "食品関連",
+      "updatedAt": "2026-08-24T02:22:41.971Z"
+    }
+  ]
 }
