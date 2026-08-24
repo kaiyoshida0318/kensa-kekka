@@ -431,5 +431,11 @@
       "updatedAt": "2026-08-24T07:43:44.795Z"
     }
   ],
-  "flowEdges": []
+  "flowEdges": [
+    {
+      "id": "fe_mt6xje7577pan8",
+      "from": "fn_mt6xj8clq4k68x",
+      "to": "fn_1787551116298_0egu"
+    }
+  ]
 }
