@@ -416,10 +416,10 @@
       "createdAt": "2026-08-24T02:22:41.970Z",
       "title": "買付前通関前に止められた",
       "body": "test",
-      "mode": "auto",
-      "division": "必要検査",
-      "field": "食品関連",
-      "updatedAt": "2026-08-24T02:22:41.971Z"
+      "mode": "manual",
+      "division": "",
+      "field": "",
+      "updatedAt": "2026-08-24T02:28:41.446Z"
     }
   ]
 }
